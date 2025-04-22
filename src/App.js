@@ -1,25 +1,55 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import MainLayout from "./components/MainLayout"; // Import MainLayout component
+import { Modal } from "antd";
+import LoginForm from "./pages/LoginForm";
+import RegistrationForm from "./pages/RegistrationForm";
+import Dashboard from "./pages/Dashboard";
+import Suppliers from "./pages/Suppliers";
+import TeaLine from "./pages/TeaLine";
+import LeafSupply from "./pages/LeafSupply";
+import Plan from "./pages/Plan";
+import SelectedUser from "./pages/SelectedUser";
+import FieldOfficers from "./pages/FieldOfficers";
+import SupplierLeafData from "./pages/SupplierLeafData";
+import Splash from "./pages/Splash";
+import Targets from "./pages/Targets";
 
-function App() {
+const App = () => {
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [modalData, setModalData] = useState({});
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
+    <Router>
+      <MainLayout>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/register" element={<RegistrationForm />} />
+          <Route path="/suppliers" element={<Suppliers />} />
+          <Route path="/fieldOfficers" element={<FieldOfficers />} />
+          <Route path="/routes" element={<TeaLine />} />
+          <Route path="/leafSupply" element={<LeafSupply />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/yearlyPlan" element={<Plan />} />
+          <Route path="/targets" element={<Targets />} />
+          
+          <Route path="/user/:comNum" element={<SelectedUser />} />
+          <Route path="/supplier/:Id" element={<SupplierLeafData />} />
+        </Routes>
+        <Modal
+          title={modalData.title}
+          open={isModalVisible}
+          footer={null}
+          centered
+          onCancel={() => setIsModalVisible(false)}
+          mask={false} // Removes background darkening effect
+          style={{ textAlign: "center" }}
         >
-          Learn React
-        </a>
-      </header>
-    </div>
+          <p>{modalData.description}</p>
+        </Modal>
+      </MainLayout>
+    </Router>
   );
-}
+};
 
 export default App;
