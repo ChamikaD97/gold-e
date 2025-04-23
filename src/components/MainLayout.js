@@ -13,7 +13,7 @@ const MainLayout = ({ children }) => {
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
       <Layout className="layout" style={{ flex: 1, position: "relative" }}>
-        {!isLoginPage && <HeaderComponent />}
+        { <HeaderComponent />}
         <div
           style={{
             flex: 1,

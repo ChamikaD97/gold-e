@@ -27,7 +27,7 @@ const HeaderComponent = () => {
       "/suppliers": "2",
       "/lines": "3",
       "/fieldOfficers": "4",
-      "/leafSupply": "5",
+      "/targets": "5",
       "/users": "6",
       "/yearlyPlan":'7'
     };

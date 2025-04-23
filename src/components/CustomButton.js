@@ -21,7 +21,7 @@ const CustomButton = ({
   // Custom styles based on size
   const buttonStyle = {
     padding: size === "large" ? "12px 20px" : "8px 16px",
-    fontSize: size === "large" ? "16px" : "14px",
+    fontSize: size === "large" ? "18px" : "16px",
     cursor: "pointer",
     borderRadius: "12px",
     backgroundColor: type,

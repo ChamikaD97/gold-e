@@ -14,6 +14,7 @@ import FieldOfficers from "./pages/FieldOfficers";
 import SupplierLeafData from "./pages/SupplierLeafData";
 import Splash from "./pages/Splash";
 import Targets from "./pages/Targets";
+import FieldOfficerReports from "./pages/FieldOfficerReports";
 
 const App = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -26,7 +27,7 @@ const App = () => {
           <Route path="/" element={<Dashboard />} />
           <Route path="/register" element={<RegistrationForm />} />
           <Route path="/suppliers" element={<Suppliers />} />
-          <Route path="/fieldOfficers" element={<FieldOfficers />} />
+          <Route path="/fieldOfficers" element={<FieldOfficerReports />} />
           <Route path="/routes" element={<TeaLine />} />
           <Route path="/leafSupply" element={<LeafSupply />} />
           <Route path="/dashboard" element={<Dashboard />} />
@@ -34,7 +35,8 @@ const App = () => {
           <Route path="/targets" element={<Targets />} />
           
           <Route path="/user/:comNum" element={<SelectedUser />} />
-          <Route path="/supplier/:Id" element={<SupplierLeafData />} />
+          <Route path="/fieldOfficers/:Id" element={<FieldOfficerReports />} />
+
         </Routes>
         <Modal
           title={modalData.title}

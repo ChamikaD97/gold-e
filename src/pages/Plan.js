@@ -28,10 +28,13 @@ const AddAchievement = () => {
   const [achievements, setIsAchievements] = useState([]);
   const [selectedOfficer, setSelectedOfficer] = useState();
   const [selectedDate, setSelectedDate] = useState("");
+  const [monthlyTargets, setMonthlyTargets] = useState([]);
 
   const [total, setTotal] = useState("");
   const [selectedLine, setSelectedLine] = useState("");
   const [target, setTarget] = useState("");
+  const [monthlyValue, setMonthlyValue] = useState();
+
   const tot = useRef();
   const handleSearch = (officer) => {
     setSelectedOfficer(officer);
@@ -44,7 +47,7 @@ const AddAchievement = () => {
       (item) => item.officer_id === officer.id
     );
     let totalValue = 0;
-    totalValue = filteredData.reduce((sum, item) => sum + item.value, 0);
+    totalValue = achievements.reduce((sum, item) => sum + item.value, 0);
     tot.current = totalValue;
     setTotal(totalValue);
     totalValue = 0;
@@ -60,7 +63,20 @@ const AddAchievement = () => {
       setIsAchievements(res.data);
     });
   }, []);
-
+  const months = [
+    { id: "jan", name: "January" },
+    { id: "feb", name: "February" },
+    { id: "mar", name: "March" },
+    { id: "apr", name: "April" },
+    { id: "may", name: "May" },
+    { id: "jun", name: "June" },
+    { id: "jul", name: "July" },
+    { id: "aug", name: "August" },
+    { id: "sep", name: "September" },
+    { id: "oct", name: "October" },
+    { id: "nov", name: "November" },
+    { id: "dece", name: "December" }, // matches your key: 'dece'
+  ];
   const [selectedRow, setSelectedRow] = useState(null);
   const [isAchievementModalVisible, setIsAchievementModalVisible] =
     useState(false);
@@ -90,6 +106,7 @@ const AddAchievement = () => {
       month,
       year,
       line: values.line,
+      gold_leaf: values.gold_leaf,
       value: parseFloat(values.target),
     };
     console.log(data);
@@ -145,6 +162,15 @@ const AddAchievement = () => {
       sorter: (a, b) => a.value - b.value,
       width: 100,
     },
+
+    {
+      title: "Gold Leaf",
+      dataIndex: "gold_leaf",
+      key: "gold_leaf",
+      sorter: (a, b) => a.value - b.value,
+      width: 100,
+    },
+
     {
       title: "Year",
       dataIndex: "year",
@@ -154,6 +180,15 @@ const AddAchievement = () => {
     },
   ];
 
+  const getMonthData = (value) => {
+    
+    console.log(value);
+
+    const filtered = filteredData.filter((item) =>
+      Object.values(item).join(" ").toLowerCase().includes(value.id)
+    );
+    setFilteredData(filtered);
+  };
   return (
     <div>
       <Card>
@@ -209,38 +244,65 @@ const AddAchievement = () => {
         </div>
         <div
           style={{
-            display: "flex",
-            justifyContent: "flex-start",
-            alignItems: "center",
-            paddingTop: "5px",
-            paddingBottom: "5px",
             borderBottom: "1px solid black",
           }}
         >
           <div
             style={{
               display: "flex",
-              justifyContent: "space-between",
+              justifyContent: "space-between", // Distribute buttons evenly
               alignItems: "center",
+              flexWrap: "wrap",
+              gap: "10px",
+              marginBottom: "10px",
+              marginTop: "10px",
+              width: "100%",
             }}
           >
-            <CustomButton
-              text="All"
-              onClick={() => {
-                setSelectedOfficer();
-
-                setFilteredData(achievements);
-              }}
-              type="rgba(21, 155, 0, 0.79)"
-            />
-            {officers.map((off) => (
+            {months.map((month) => (
               <CustomButton
-                onClick={() => handleSearch(off)}
-                text={off.id + "-" + off.name}
-                type="rgba(0, 10, 145, 0.78)"
+                key={month.id}
+                text={month.name}
+                onClick={() => getMonthData(month)} // ✅ Pass the month id
+                type="rgba(0, 0, 0, 0.78)"
               />
             ))}
           </div>
+        </div>
+        <div
+         style={{
+          display: "flex",
+          justifyContent: "space-between", // Distribute buttons evenly
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "10px",
+          marginBottom: "10px",
+          marginTop: "10px",
+          width: "100%",        borderBottom: "1px solid black",
+          paddingBottom: "10px",
+        }}
+      >
+          <CustomButton
+            text="All"
+            onClick={() => {
+              setSelectedOfficer();
+
+              setFilteredData(achievements);
+            }}
+            type="rgba(21, 155, 0, 0.79)"
+          />
+          {officers.map((off) => (
+            <CustomButton
+              onClick={() => handleSearch(off)}
+              text={off.id + "-" + off.name}
+              type="rgba(0, 10, 145, 0.78)"
+            />
+          ))}{" "}
+          <CustomButton
+            text="MALIDUWA"
+            onClick={() => handleSearch({ id: 6 })}
+            type="rgba(0, 0, 0, 0.79)"
+          />
         </div>
         <div
           style={{
@@ -307,7 +369,7 @@ const AddAchievement = () => {
           </Form.Item>
 
           <Form.Item
-            label="Target"
+            label="Fullfilled"
             name="target"
             rules={[
               { required: true, message: "Please enter the target value!" },
@@ -319,7 +381,19 @@ const AddAchievement = () => {
               placeholder="Enter target value"
             />
           </Form.Item>
-
+          <Form.Item
+            label="Gold leaf"
+            name="gold_leaf"
+            rules={[
+              { required: true, message: "Please enter the target value!" },
+            ]}
+          >
+            <Input
+              bordered={true}
+              type="number"
+              placeholder="Enter target value"
+            />
+          </Form.Item>
           <div
             style={{
               display: "flex",
