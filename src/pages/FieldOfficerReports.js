@@ -22,6 +22,7 @@ import {
 } from "@ant-design/icons";
 import { b, bb, gl, p } from "../var";
 import { selectClasses } from "@mui/material";
+import MonthRangeSelector from "../components/MonthButton";
 const FieldOfficerReports = () => {
   const { Ids } = useParams();
 
@@ -35,6 +36,7 @@ const FieldOfficerReports = () => {
   const [monthlyTargets, setMonthlyTargets] = useState([]);
   const [achievements, setAchievements] = useState([]);
   const [isDetailsModelVisible, setIsDetailsModelVisible] = useState(false);
+  const [isShorMoreModel, setShorMoreModelVisible] = useState(false);
 
   const [filteredmonthlyTargets, setFilteredMonthlyTargets] = useState([]);
   const [filteredachievements, setFilteredAchievements] = useState([]);
@@ -42,6 +44,10 @@ const FieldOfficerReports = () => {
   const [achivementFroSelectedMonth, setAchivementFroSelectedMonth] = useState(
     []
   );
+  const [selectedRange, setSelectedRange] = useState({
+    start: null,
+    end: null,
+  });
 
   const [targetForSelectedMonth, setTargetForSelectedMonth] = useState([]);
 
@@ -55,24 +61,72 @@ const FieldOfficerReports = () => {
     useState([]);
   const [filteredData, setFilteredData] = useState([]);
 
-  const [summaryData, setSummaryData] = useState({
-    totalTargets: 0,
-    officersCount: 0,
-    averageTarget: 0,
-    currentMonthTarget: 0,
-  });
+  const [summaryData, setSummaryData] = useState([]);
+
   const [selectedOfficer, setSelectedOfficer] = useState([]);
+  const [monthSelectorKey, setMonthSelectorKey] = useState(0);
 
   const [loading, setLoading] = useState(false);
   const API_URL = "http://192.168.1.4:8080";
+  const resetRange = () => {
+    setSummaryData([]);
+    setMonthSelectorKey(prev => prev + 1); // This forces remount
+  };
+  
+  const handleRangeChange = (range, firstMonth) => {
+    console.log("Selected Range start:", range.start);
+    console.log("Selected end:", range.end);
+    const filtered = achievements.filter(
+      (item) => item.officer_id === officer.id
+    );
+    let startMonth = range.start;
+    if (!range.end) {
+      // need to clear the selected range
+      console.log('first');
+      
+      let endMonth = range.end;
 
-  // Fetch all necessary data
+      let x = startMonth;
+      startMonth = endMonth;
+      endMonth = x;
+
+
+      const summary = calculateCumulative(filtered, range.start, range.start);
+
+
+      console.log(summary);
+
+    }else{
+      
+      const summary = calculateCumulative(filtered, range.start, range.end);
+
+      console.log(summary);
+    }
+
+
+
+    if (range.start > selectedMonth.id) {
+      console.log("Invalid ******** selected");
+      return;
+    }
+
+   
+
+    setShorMoreModelVisible(true);
+    closeDataModel();
+    setShorMoreModelVisible(true);
+
+    if (!range.start || !range.end) {
+      console.log("Invalid range selected");
+      return;
+    }
+  };
+
   const fetchOfficers = () => {
     axios.get("http://localhost:5000/api/officers").then((res) => {
       const filtered = res.data.filter((item) => item.id == Id);
       setOfficers(res.data);
       setOfficer(filtered[0]);
-      updateSummaryData(res.data.length);
     });
   };
   const calculateTotalTargetSum = (dataArray) => {
@@ -85,7 +139,7 @@ const FieldOfficerReports = () => {
 
       setMonthlyTargets(res.data);
       setFilteredMonthlyTargets(filtered);
-      calculateTotals(res.data);
+      //calculateTotals(res.data);
     });
   };
 
@@ -114,7 +168,7 @@ const FieldOfficerReports = () => {
       (item) => item.officer_id === officer.id
     );
     setFilteredAchievements(filtered);
-    
+
     setFilteredMonthlyTargets(filteredMonthlyTargets);
 
     const updateTargets = months.map((month) => ({
@@ -142,39 +196,6 @@ const FieldOfficerReports = () => {
 
     setId(officer.id);
   };
-  // Calculate totals for summary data
-  const calculateTotals = (data) => {
-    if (!data || data.length === 0) return;
-
-    const totals = data.reduce(
-      (acc, item) => {
-        acc.totalTargets += item.total_target || 0;
-        return acc;
-      },
-      { totalTargets: 0, currentMonthTarget: 0 }
-    );
-
-    const currentMonth = new Date()
-      .toLocaleString("default", { month: "short" })
-      .toLowerCase();
-    const currentYear = new Date().getFullYear();
-
-    const currentTarget = data.find(
-      (item) => item.month === currentMonth && item.year === currentYear
-    );
-
-    setSummaryData((prev) => ({
-      ...prev,
-      totalTargets: totals.totalTargets,
-      currentMonthTarget: currentTarget?.value || 0,
-      averageTarget: totals.totalTargets / (data.length || 1),
-    }));
-  };
-
-  // Update summary data
-  const updateSummaryData = (officersCount) => {
-    setSummaryData((prev) => ({ ...prev, officersCount }));
-  };
 
   useEffect(() => {
     fetchOfficers();
@@ -190,20 +211,6 @@ const FieldOfficerReports = () => {
 
   // Get all data related to the Id
 
-  const officerAchievements = achievements.filter(
-    (item) => item.officerId == Id
-  );
-
-  const doCalculations = (monthData) => {
-    const officerMonthlyTargets = monthlyTargetsFroSelectedOfficer.filter(
-      (item) => item.id == monthData.id
-    );
-
-    const achivement = filteredachievements.filter(
-      (item) => item.month == monthData.id
-    );
-  };
-
   const showDataModel = (monthData) => {
     const filtered = achievements.filter(
       (item) => item.officer_id === selectedOfficer.id
@@ -213,8 +220,6 @@ const FieldOfficerReports = () => {
     const officerMonthlyTargets = monthlyTargetsFroSelectedOfficer.filter(
       (item) => item.id == monthData.id
     );
-    console.log(officerMonthlyTargets[0]);
-    console.log(achivement[0].BoB);
 
     if (achivement[0]) {
       setAchivementFroSelectedMonth(achivement[0]);
@@ -223,8 +228,11 @@ const FieldOfficerReports = () => {
     }
   };
 
-  const closeDataModel = () => {
+  const closeDetailsModel = () => {
     setIsDetailsModelVisible(false);
+  };
+  const closeDataModel = () => {
+    setShorMoreModelVisible(false);
   };
   const months = [
     { id: "jan", name: "January" },
@@ -240,6 +248,21 @@ const FieldOfficerReports = () => {
     { id: "nov", name: "November" },
     { id: "dece", name: "December" }, // matches your key: 'dece'
   ];
+  const monthOrder = [
+    "jan",
+    "feb",
+    "mar",
+    "apr",
+    "may",
+    "jun",
+    "jul",
+    "aug",
+    "sep",
+    "oct",
+    "nov",
+    "dece",
+  ];
+
   const getMonthNameById = (monthId) =>
     months.find((m) => m.id === monthId)?.name || null;
   const achievedMonths = new Set(filteredachievements.map((ach) => ach.month));
@@ -249,46 +272,106 @@ const FieldOfficerReports = () => {
     return Math.round((value / total) * 100) + "%";
   };
 
+  function filterTargetsByMonthRange(data, startMonth, endMonth) {
+    const record = data[0]; // Assuming only one object
 
+    if (startMonth == endMonth) {
+      const sum = record[startMonth] || 0;
 
-  const filterAchievementsByMonthRange = (data, startMonth, endMonth) => {
-    // Define month order to compare
-    const monthOrder = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-  
-    // Get the index positions of the start and end months
-    const startIdx = monthOrder.indexOf(startMonth.toLowerCase());
-    const endIdx = monthOrder.indexOf(endMonth.toLowerCase());
-  
-    if (startIdx === -1 || endIdx === -1 || startIdx > endIdx) {
-      throw new Error('Invalid month range');
+      return sum;
     }
-  
-    // Filter the dataset
-    return data.filter(entry => {
-      const monthIdx = monthOrder.indexOf(entry.month.toLowerCase());
+    const sum = (record[startMonth] || 0) + (record[endMonth] || 0);
+
+    return sum;
+  }
+
+  const calculateCumulative = (dataArray, startMonth, endMonth) => {
+    const monthOrder = [
+      "jan",
+      "feb",
+      "mar",
+      "apr",
+      "may",
+      "jun",
+      "jul",
+      "aug",
+      "sep",
+      "oct",
+      "nov",
+      "dec",
+    ];
+
+    let startIdx = monthOrder.indexOf(startMonth.toLowerCase());
+    let endIdx = monthOrder.indexOf(endMonth.toLowerCase());
+    if (startIdx > endIdx) {
+      let x = startIdx;
+      startIdx = endIdx;
+      endIdx = x;
+    }
+    if (startIdx === -1 || endIdx === -1 || startIdx > endIdx) {
+      throw new Error("Invalid month range");
+    }
+
+    const filteredData = dataArray.filter((item) => {
+      const monthIdx = monthOrder.indexOf(item.month.toLowerCase());
       return monthIdx >= startIdx && monthIdx <= endIdx;
     });
-  }
-  
 
+    const months = filteredData.length;
+    const r = filteredData.reduce((sum, item) => sum + (item.value || 0), 0);
+    const b = filteredData.reduce((sum, item) => sum + (item.B || 0), 0);
+    const bob = filteredData.reduce((sum, item) => sum + (item.BoB || 0), 0);
+    const p = filteredData.reduce((sum, item) => sum + (item.P || 0), 0);
+    const gold_leaf = filteredData.reduce(
+      (sum, item) => sum + (item.gold_leaf || 0),
+      0
+    );
+    const targets = monthlyTargets.filter(
+      (item) => item.officer_id === officer.id
+    );
+    const total_target = filterTargetsByMonthRange(
+      targets,
+      startMonth,
+      selectedMonth.id
+    );
 
-  const shorMore = () => {
+    const b_percentage = months > 0 ? Math.round(b / months) + "%" : "0%";
+    const bob_percentage = months > 0 ? Math.round(bob / months) + "%" : "0%";
+    const p_percentage = months > 0 ? Math.round(p / months) + "%" : "0%";
+    const gold_leaf_percentage =
+      r > 0 ? Math.round((gold_leaf / r) * 100) + "%" : "0%";
 
+    return {
+      received: r,
+      months,
+      gold_leaf,
+      b_percentage,
+      bob_percentage,
+      p_percentage,
+      gold_leaf_percentage,
+      total_target,
+    };
+  };
 
+  const calculateData = (starttedMonth) => {
     const filtered = achievements.filter(
       (item) => item.officer_id === officer.id
     );
-    console.log(selectedOfficer);
+    const summary = calculateCumulative(
+      filtered,
+      starttedMonth,
+      selectedMonth.id
+    );
+    setShorMoreModelVisible(true);
+    closeDataModel();
+    setShorMoreModelVisible(true);
+    setSummaryData(summary);
+  };
 
-    console.log(selectedMonth);
-
-    console.log(filtered);
-    console.log(filteredmonthlyTargets);
-
-
-    const result = filterAchievementsByMonthRange(filtered, 'jan', 'feb');
-    console.log(result);
-
+  const showMoreModel = () => {
+    setShorMoreModelVisible(true);
+    closeDataModel();
+    setShorMoreModelVisible(true);
   };
   return (
     <>
@@ -317,28 +400,6 @@ const FieldOfficerReports = () => {
         </h2>
       </div>
       <Card>
-        {/* <div
-          style={{
-            display: "flex",
-            justifyContent: "space-evenly",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "10px",
-            marginBottom: "10px",
-            marginTop: "10px",
-            width: "100%",
-            paddingBottom: "10px",
-          }}
-        >
-          <CustomButton
-            text="Reload"
-            onClick={() => {
-              handleSearch("all");
-            }}
-            icon={<ReloadOutlined />}
-            type="rgba(145, 0, 0, 0.78)"
-          />
-        </div> */}
         <div
           style={{
             display: "flex",
@@ -352,10 +413,10 @@ const FieldOfficerReports = () => {
         >
           <CustomButton
             onClick={() => {
-              handleSearch("all");
+
             }}
             icon={<ReloadOutlined />}
-            type="rgba(145, 0, 0, 0.78)"
+            type="#910000"
           />
           {officers &&
             officers.map((off) => (
@@ -554,33 +615,37 @@ const FieldOfficerReports = () => {
         )}
       </div>
       <Modal
-        title={selectedOfficer ? selectedOfficer.name : selectedOfficer.id}
+        title={
+          selectedOfficer
+            ? selectedMonth.name + " Report of " + selectedOfficer.name
+            : selectedOfficer.id
+        }
         visible={isDetailsModelVisible}
-        onCancel={closeDataModel}
+        onCancel={() => setIsDetailsModelVisible(false)}
         footer={null}
         centered
       >
         <h2
           style={{
             margin: 0,
-            fontSize: "20px",
+            fontSize: "15px",
           }}
         >
           Leaf Count
         </h2>
         <div
-          style={{ fontSize: "18px", fontWeight: "bold", textAlign: "center" }}
+          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
         >
-          Target - {targetForSelectedMonth.target}
+          Target - {targetForSelectedMonth.target} kg
         </div>
         <div
-          style={{ fontSize: "18px", fontWeight: "bold", textAlign: "center" }}
+          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
         >
-          Recived - {achivementFroSelectedMonth.value}
+          Recived - {achivementFroSelectedMonth.value} kg
         </div>
 
         <div
-          style={{ fontSize: "18px", fontWeight: "bold", textAlign: "center" }}
+          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
         >
           {getPercentage(
             achivementFroSelectedMonth.value,
@@ -590,24 +655,24 @@ const FieldOfficerReports = () => {
         <h2
           style={{
             margin: 0,
-            fontSize: "20px",
+            fontSize: "15px",
           }}
         >
           Gold Leaf (50%)
         </h2>
         <div
-          style={{ fontSize: "18px", fontWeight: "bold", textAlign: "center" }}
+          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
         >
-          Target - {targetForSelectedMonth.target * gl}
+          Target - {targetForSelectedMonth.target * gl} kg
         </div>
 
         <div
-          style={{ fontSize: "18px", fontWeight: "bold", textAlign: "center" }}
+          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
         >
-          Recived - {achivementFroSelectedMonth.gold_leaf}
+          Recived - {achivementFroSelectedMonth.gold_leaf} kg
         </div>
         <div
-          style={{ fontSize: "18px", fontWeight: "bold", textAlign: "center" }}
+          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
         >
           {getPercentage(
             achivementFroSelectedMonth.gold_leaf,
@@ -617,69 +682,69 @@ const FieldOfficerReports = () => {
         <h2
           style={{
             margin: 0,
-            fontSize: "20px",
+            fontSize: "15px",
           }}
         >
           B (60%)
         </h2>
         <div
-          style={{ fontSize: "18px", fontWeight: "bold", textAlign: "center" }}
+          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
         >
-          Target - {targetForSelectedMonth.target * b}
+          Target - {targetForSelectedMonth.target * b} kg
         </div>
 
         <div
-          style={{ fontSize: "18px", fontWeight: "bold", textAlign: "center" }}
+          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
         >
           Recived - {achivementFroSelectedMonth.B} % (
           {(achivementFroSelectedMonth.value * achivementFroSelectedMonth.B) /
             100}
-          )
+          kg )
         </div>
         <h2
           style={{
             margin: 0,
-            fontSize: "20px",
+            fontSize: "15px",
           }}
         >
           BB (10%)
         </h2>
         <div
-          style={{ fontSize: "18px", fontWeight: "bold", textAlign: "center" }}
+          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
         >
           Target - {targetForSelectedMonth.target * bb}
         </div>
 
         <div
-          style={{ fontSize: "18px", fontWeight: "bold", textAlign: "center" }}
+          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
         >
           Recived - {achivementFroSelectedMonth.BoB} % (
           {(achivementFroSelectedMonth.value * achivementFroSelectedMonth.BoB) /
             100}
-          )
+          kg )
         </div>
 
         <h2
           style={{
             margin: 0,
-            fontSize: "20px",
+            fontSize: "15px",
           }}
         >
           P (30%)
         </h2>
         <div
-          style={{ fontSize: "18px", fontWeight: "bold", textAlign: "center" }}
+          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
         >
           Target - {targetForSelectedMonth.target * p}
         </div>
 
         <div
-          style={{ fontSize: "18px", fontWeight: "bold", textAlign: "center" }}
+          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
         >
           Recived - {achivementFroSelectedMonth.P} %(
           {(achivementFroSelectedMonth.value * achivementFroSelectedMonth.P) /
             100}
-          )
+          kg )
         </div>
         <CustomButton
           text={"More"}
@@ -690,8 +755,48 @@ const FieldOfficerReports = () => {
             alignItems: "center",
             textAlign: "center",
           }}
-          onClick={() => shorMore()}
+          onClick={() => showMoreModel()}
         />
+      </Modal>
+      <Modal
+        title={"Select Month Range"}
+        visible={isShorMoreModel}
+        onCancel={() => setShorMoreModelVisible(false)}
+        footer={null}
+        centered
+        width={"60%"}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between", // Distribute buttons evenly
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "10px",
+          }}
+        >
+          {" "}
+          <CustomButton
+            type="#f0f0f0"
+            onClick={resetRange}
+            icon={<ReloadOutlined />}
+            style={{
+              backgroundColor: "#910000",
+              border: "1px solid #d9d9d9",
+            }}
+          />
+          {months
+            .filter((month) => achievedMonths.has(month.id)) // Only the achieved months
+            .sort((a, b) => monthOrder.indexOf(a.id) - monthOrder.indexOf(b.id)) // Sort by month order
+            .length > 0 && (
+            <MonthRangeSelector
+            key={monthSelectorKey}
+              months={months.filter((month) => achievedMonths.has(month.id))} // Pass the filtered months
+              onRangeChange={handleRangeChange} // Call the handleRangeChange function
+            />
+          )}
+        </div>
+        {summaryData && summaryData.months}
       </Modal>
 
       {/* {!officer && <Card>{total}</Card>} */}

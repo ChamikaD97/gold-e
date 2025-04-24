@@ -46,7 +46,7 @@ const CustomButton = ({
         <Spin indicator={loadingIcon} />
       ) : (
         <>
-          {icon && <span style={{ marginRight: "8px" }}>{icon}</span>}
+          {icon && <span>{icon}</span>}
           {text}
         </>
       )}
