@@ -81,8 +81,6 @@ const FieldOfficerReports = () => {
     );
     let startMonth = range.start;
     if (!range.end) {
-      // need to clear the selected range
-      console.log('first');
       
       let endMonth = range.end;
 
@@ -90,6 +88,7 @@ const FieldOfficerReports = () => {
       startMonth = endMonth;
       endMonth = x;
 
+console.log('same');
 
       const summary = calculateCumulative(filtered, range.start, range.start);
 
@@ -371,6 +370,7 @@ const FieldOfficerReports = () => {
   const showMoreModel = () => {
     setShorMoreModelVisible(true);
     closeDataModel();
+    resetRange()
     setShorMoreModelVisible(true);
   };
   return (
