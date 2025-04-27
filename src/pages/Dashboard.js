@@ -1,173 +1,74 @@
-// CardComponent.js
-import React, { useEffect } from "react";
-import "../App.css"; // Import the CSS file
-import { Row, Col, Table } from "antd";
-import DashboardSupplierCard from "../sections/DashboardSupplierCard";
-import { isLoading } from "../redux/authSlice";
-import { useSelector, useDispatch } from "react-redux";
-import axios from "axios";
-import { engines, enginesClasses, setSearch } from "../redux/engineSlice";
-import {
-  failures,
-  engineFailures,
-  pendingEngineFailures,
-  completedEngineFailures,
-  inProgressEngineFailures,
-} from "../redux/failureSlice";
-import DailyData from "../sections/DailyData";
-import DashboardFieldOfficersCard from "../sections/DashboardFieldOfficersCard";
-import Loader from "../components/Loader";
-import CardComponent from "../components/CardComponet";
-import TripCard from "../sections/TripCard";
-import RecentFailures from "../sections/RecentFailures";
-import UserCard from "../sections/DriversCard";
-import DriversCard from "../sections/DriversCard";
-import NotificationCard from "../sections/NotificationCard";
-import TripChart from "../sections/TripChart";
-import FailureChart from "../sections/FailureChart";
-import DashboardFullTarget from "../sections/DashboardFullTarget";
-
-const NewCardComponent = () => {
-  return (
-    <div
-      style={{
-        padding: 20,
-        background: "#fff",
-        borderRadius: 8,
-        textAlign: "center",
-      }}
-    >
-      <h3>T1</h3>
-      <p>T2</p>
-    </div>
-  );
-};
+import { Card, Row, Col, Progress, Button, Modal } from "antd";
+import { useState } from "react";
 
 const Dashboard = () => {
-  const dispatch = useDispatch();
-  const { loading, token } = useSelector((state) => state.auth);
-  const API_URL = "http://13.61.26.58:5000";
-  const {
-    engineFailuresData,
-    completedEngineFailureData,
-    inProgressEngineFailureData,
-    pendingEngineFailureData,
-  } = useSelector((state) => state.engFail);
-  const fetchEngines = async () => {
-    try {
-      const engineRes = await axios.get(`${API_URL}/api/engines`, {
-        headers: { Authorization: token },
-      });
-      const classEnginesData = await axios.get(`${API_URL}/api/classEngines`, {
-        headers: { Authorization: token },
-      });
-      dispatch(enginesClasses(classEnginesData.data));
-      dispatch(engines(engineRes.data));
-    } catch (error) {
-      console.error("Error fetching engines:", error.message);
-    }
+  const [isRankingModalOpen, setRankingModalOpen] = useState(false);
+  const data = {
+    yearly_target: 4200000,
+    achieved_so_far: 674100,
+    super_leaf_target: 20000,
+    super_leaf_achieved: 15678,
   };
-
-  const fetchFailures = async () => {
-    try {
-      const failuresData = await axios.get(`${API_URL}/api/failures`, {
-        headers: { Authorization: token },
-      });
-      dispatch(failures(failuresData.data));
-    } catch (error) {
-      console.error("Error fetching failures:", error.message);
-    }
-  };
-
-  const fetchEngineFailures = async () => {
-    try {
-      const efData = await axios.get(`${API_URL}/api/engineFailures`, {
-        headers: { Authorization: token },
-      });
-      dispatch(engineFailures(efData.data));
-      dispatch(
-        pendingEngineFailures(efData.data.filter((s) => s.status === "pending"))
-      );
-      dispatch(
-        inProgressEngineFailures(
-          efData.data.filter((s) => s.status === "inProgress")
-        )
-      );
-      dispatch(
-        completedEngineFailures(
-          efData.data.filter((s) => s.status === "completed")
-        )
-      );
-    } catch (error) {
-      console.error("Error fetching engineFailures:", error.message);
-    }
-  };
-
-  useEffect(() => {
-    dispatch(setSearch());
-    dispatch(isLoading(true));
-    fetchEngines();
-    fetchFailures();
-    fetchEngineFailures();
-    setTimeout(() => {
-      dispatch(isLoading(false));
-    }, 500);
-  }, [dispatch]);
-
-
+  
   return (
-    <div>
-      {!loading ? (
-        <div style={{ minHeight: 360, zIndex: 2 }}>
-          <Row gutter={25} style={{ marginBottom: 15 }}>
-            <Col span={6}>
-              <DashboardFullTarget  />
-            </Col>
-            <Col span={6}>
-              <DashboardFieldOfficersCard />
-            </Col>
-            {/* <Col span={4}>
-              <DailyData />
-            </Col>
-            <Col span={4}>
-              <TripCard />
-            </Col>
-            <Col span={4}>
-              <DriversCard />
-            </Col> */}
-          </Row>
-{/* 
-          <Row gutter={25} style={{ marginBottom: 15 }}>
-            <Col span={12}>
-              <TripChart />
-            </Col>{" "}
-            <Col span={12}>
-              <FailureChart />
-            </Col>
-          </Row> */}
+    <>
+      <Row gutter={[16, 16]}>
+        {/* Section 1: Yearly Target Summary */}
+        <Col xs={24} md={8}>
+          <Card title="Yearly Progress" bordered>
+            <p><strong>Target of the Year:</strong> {data.yearly_target}</p>
+            <p><strong>Achievement Until Now:</strong> {data.achieved_so_far}</p>
+            <p><strong>Percentage:</strong></p>
+            <Progress 
+              percent={Math.round((data.achieved_so_far / data.yearly_target) * 100)} 
+              strokeColor="#1890ff" 
+            />
+          </Card>
+        </Col>
 
-          {/* 
-          <Row gutter={25} style={{ marginBottom: 15 }}>
-            <Col span={12}>
-            <Table
-            columns={columns}
-            dataSource={engineFailuresData}
-     
-            pagination={true} // Enable pagination
-            scroll={{ x: true }}
+        {/* Section 2: Super Leaf Summary */}
+        <Col xs={24} md={8}>
+          <Card title="Super Leaf Summary" bordered>
+            <p><strong>Super Leaf Target:</strong> {data.super_leaf_target}</p>
+            <p><strong>Super Leaf Achieved:</strong> {data.super_leaf_achieved}</p>
+            <p><strong>Super %:</strong></p>
+            <Progress 
+              percent={Math.round((data.super_leaf_achieved / data.super_leaf_target) * 100)} 
+              strokeColor="gold" 
+            />
+          </Card>
+        </Col>
+
+        {/* Section 3: Rankings */}
+        <Col xs={24} md={8}>
+          <Card
+            title="Rankings"
             bordered
-          />
-            </Col>
-            <Col span={12}>
-              <CardComponent title={"Engien failures"} />
-            </Col>
-          </Row> */}
-        </div>
-      ) : (
-        <Loader />
-      )}
-    </div>
+            actions={[
+              <Button type="primary" onClick={() => setRankingModalOpen(true)}>
+                View Rankings
+              </Button>,
+            ]}
+          >
+            <p>Click the button below to view detailed rankings.</p>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Rankings Modal */}
+      <Modal
+        title="Officer Rankings"
+        visible={isRankingModalOpen}
+        onCancel={() => setRankingModalOpen(false)}
+        footer={null}
+        centered
+        width="50%"
+      >
+        {/* Add your ranking component or table here */}
+        <p>Ranking details will go here...</p>
+      </Modal>
+    </>
   );
 };
 
-export default Dashboard;
+export default Dashboard

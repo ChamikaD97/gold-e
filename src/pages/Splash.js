@@ -1,33 +1,42 @@
-import React, { useState } from "react";
-import { Form, Input, Button, Checkbox, message, Flex } from "antd";
-import { useDispatch } from "react-redux";
-import { login, userToken } from "../redux/authSlice";
-import CenteredCard from "../components/CenteredCard";
-import CustomButton from "../components/CustomButton";
-import { ToastContainer, toast } from "react-toastify";
-
-import { LockFilled, LockOutlined, UserOutlined } from "@ant-design/icons";
+import React, { useEffect } from "react";
+import { Spin } from "antd";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import logo from "../images/favicona.ico"; // Optional logo
 
 const Splash = () => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
-  
-  const [isLoading, setIsLoading] = useState(false);
-  const API_URL = "http://13.61.26.58:5000";
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      navigate("/dashboard"); // uncomment when needed
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [navigate]);
 
   return (
     <div
       style={{
+     marginTop:'150px',
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
+        flexDirection: "column",
+        textAlign: "center",
+        animation: "fadeIn 1.5s ease-in-out",
       }}
     >
-      <CenteredCard>
-      hihiii
-      </CenteredCard>
+      <img
+        src={logo}
+        alt="GoldE-Tea Logo"
+        style={{ width: 130, height: 130,  }}
+      />
+      <h1 style={{ fontSize: "4rem", color: "black", marginBottom: 5 }}>
+        GoldE-Tea
+      </h1>
+      <p style={{ fontSize: "3rem", color: "black", marginBottom: 20 }}>
+        Green House Plantation
+      </p>
+      <Spin size="large" tip="Loading..." />
     </div>
   );
 };

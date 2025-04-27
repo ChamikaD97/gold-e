@@ -13,14 +13,15 @@ const MainLayout = ({ children }) => {
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
       <Layout className="layout" style={{ flex: 1, position: "relative" }}>
-        { <HeaderComponent />}
+        {/* Render Header only if not on the login page */}
+        {!isLoginPage && <HeaderComponent />}
         <div
           style={{
             flex: 1,
             backgroundImage: `url(${background})`,
-            backgroundSize: "cover", // Ensures the image covers the entire div
-            backgroundPosition: "center", // Centers the image
-            backgroundRepeat: "no-repeat", // Prevents the image from repeating
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
           }}
         >
           <Layout
