@@ -13,7 +13,7 @@ import CustomButton from "../components/CustomButton";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useSelector, useDispatch } from "react-redux";
-import { engines, enginesClasses, setSearch } from "../redux/engineSlice";
+import { setSearch, setOfficers ,setOfficerLines } from "../redux/officerSlice";
 import { isLoading, setSelectedKey } from "../redux/authSlice";
 import ReactCountryFlag from "react-country-flag";
 import jsPDF from "jspdf";
@@ -29,7 +29,7 @@ const { Option } = Select;
 const { TextArea } = Input;
 
 const Suppliers = () => {
-  const { engineData, search } = useSelector((state) => state.eng);
+  const { officerData, search } = useSelector((state) => state.eng);
   const { loading, token } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const [api, contextHolder] = notification.useNotification();
@@ -40,7 +40,7 @@ const Suppliers = () => {
   };
   const [selectedRow, setSelectedRow] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [filteredData, setFilteredData] = useState(engineData);
+  const [filteredData, setFilteredData] = useState(officerData);
   const navigate = useNavigate();
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [form] = Form.useForm();
@@ -53,7 +53,7 @@ const Suppliers = () => {
     setIsAddModalVisible(false);
     form.resetFields();
   };
-  const API_URL =  "http://13.61.26.58:5000";
+  const API_URL = "http://13.61.26.58:5000";
   const handleSubmit = async (values) => {
     try {
       dispatch(isLoading(true));
@@ -113,7 +113,7 @@ const Suppliers = () => {
       dataIndex: "route",
       key: "route",
     },
-    
+
   ];
 
   const handleRowClick = (record) => {
@@ -140,7 +140,7 @@ const Suppliers = () => {
     if (!value) {
       return;
     }
-    const filtered = engineData.filter((item) =>
+    const filtered = officerData.filter((item) =>
       Object.values(item).join(" ").toLowerCase().includes(value)
     );
     setFilteredData(filtered);
@@ -156,8 +156,8 @@ const Suppliers = () => {
         headers: { Authorization: "token" },
       });
 
-      dispatch(engines(engineRes.data));
-      setFilteredData(engineData);
+      //dispatch(engines(engineRes.data));
+      setFilteredData(officerData);
 
       setTimeout(() => {
         dispatch(isLoading(false));
@@ -172,11 +172,11 @@ const Suppliers = () => {
   };
   useEffect(() => {
     if (!search) {
-      setFilteredData(engineData);
+      setFilteredData(officerData);
       return;
     }
 
-    const filtered = engineData.filter((item) =>
+    const filtered = officerData.filter((item) =>
       item.class?.toLowerCase().includes(search.toLowerCase())
     );
 
@@ -208,11 +208,11 @@ const Suppliers = () => {
               icon={<ReloadOutlined />}
               type="rgba(145, 0, 0, 0.64)"
             />
-      
+
           </div>
-          
-          <h2 style={{ margin: 0 }} onClick={() => setFilteredData(engineData)}>
-          Suppliers
+
+          <h2 style={{ margin: 0 }} onClick={() => setFilteredData(officerData)}>
+            Suppliers
           </h2>
           <div
             style={{
@@ -223,7 +223,7 @@ const Suppliers = () => {
           >
             <Input
               placeholder="Search"
-              onClear={()=>setFilteredData(engineData)}
+              onClear={() => setFilteredData(officerData)}
               onChange={handleSearch}
               allowClear={true}
               style={{
@@ -233,7 +233,7 @@ const Suppliers = () => {
                 marginRight: "10px",
               }}
             />
-            
+
             <CustomButton
               text="Downlaod"
               icon={<DownloadOutlined />}

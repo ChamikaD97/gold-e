@@ -1,107 +1,78 @@
 import React from "react";
-import { Layout, Menu, Button } from "antd";
+import { Layout, Menu } from "antd";
+import { Link } from "react-router-dom";
 import {
-  HomeSharp,
-  TrainRounded,
-  TrainSharp,
-  Warning,
-  Notifications,
-  VerifiedUserOutlined,
-} from "@mui/icons-material";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
-import { login, setSelectedKey, userToken } from "../redux/authSlice"; // Adjust path if needed
+  UserOutlined,
+  AppstoreOutlined,
+  SettingOutlined,
+  TeamOutlined,
+  ShopOutlined,
+  SolutionOutlined,
+  FundOutlined,
+  HighlightOutlined,
+  WalletOutlined
+} from "@ant-design/icons";
 
 const { Header } = Layout;
+const { SubMenu } = Menu;
 
 const HeaderComponent = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate(); // Hook to navigate programmatically
-  const { selectedKey } = useSelector((state) => state.auth);
-  const location = useLocation();
-
-  // Sync menu selection with the current route on mount
-  React.useEffect(() => {
-    const pathToKey = {
-      "/dashboard": "1",
-      "/suppliers": "2",
-      "/lines": "3",
-      "/fieldOfficers": "4",
-      "/targets": "5",
-      "/users": "6",
-      "/yearlyPlan":'7'
-    };
-    dispatch(setSelectedKey(pathToKey[location.pathname] || "0"));
-  }, [location.pathname, dispatch]);
-
-  // Handle logout
-  const handleLogout = () => {
-    dispatch(login());
-    dispatch(userToken());
-    dispatch(setSelectedKey("0")); // Reset selected key or perform any other logout actions
-    navigate("/"); // Redirect to login page
-  
-    
-  };
-
   return (
     <Header
       style={{
-        position: "sticky",
+        position: "fixed",
         top: 0,
-        zIndex: 100,
+        zIndex: 1,
         width: "100%",
+        padding: 0,
+        lineHeight: "64px",
+        background: "#001529"
       }}
     >
-      <Menu
-        theme="dark"
-        mode="horizontal"
-        selectedKeys={[selectedKey]}
-        onClick={(e) => dispatch(setSelectedKey(e.key))}
-        style={{ lineHeight: "64px" }} // Aligning items vertically
-      >
-        <Menu.Item key="1" >
+      <Menu theme="dark" mode="horizontal" style={{ lineHeight: "64px" }}>
+        <Menu.Item key="dashboard" icon={<AppstoreOutlined />}>
           <Link to="/dashboard">Dashboard</Link>
         </Menu.Item>
-        {/* <Menu.Item key="2" >
-          <Link to="/suppliers">Suppliers</Link>
-        </Menu.Item> */}
-        {/* <Menu.Item key="3" >
-          <Link to="/routes">Routes</Link>
-        </Menu.Item> */}
-        <Menu.Item key="4">
-          <Link to="/fieldOfficers">Field Officers</Link>
+        <Menu.Item key="suppliers" icon={<SolutionOutlined />}>
+          <Link to="/leaf-count">Suppliers</Link>
         </Menu.Item>
-        <Menu.Item key="5">
-          <Link to="/targets">Annual Targets</Link>
+
+        <Menu.Item key="employees" icon={<TeamOutlined />}>
+          <Link to="/employees">Employees</Link>
         </Menu.Item>
-        <Menu.Item key="7">
-          <Link to="/yearlyPlan">2025 Yearly Plan</Link>
+
+
+
+        {/* <SubMenu key="employees" icon={<TeamOutlined />} title="Employees">
+          <SubMenu key="executive" title="Executive">
+            <Menu.Item key="top-mgmt"><Link to="/employees/top-management">Top Management Staff</Link></Menu.Item>
+            <Menu.Item key="factory-staff"><Link to="/employees/factory">Factory Staff</Link></Menu.Item>
+            <Menu.Item key="accounts-staff"><Link to="/employees/accounts">Account Staff</Link></Menu.Item>
+            <Menu.Item key="field-staff"><Link to="/employees/field">Field Office Staff</Link></Menu.Item>
+          </SubMenu>
+          <SubMenu key="non-executive" title="Non Executive">
+            <Menu.Item key="labours"><Link to="/employees/labours">Labours</Link></Menu.Item>
+            <Menu.Item key="drivers"><Link to="/employees/drivers">Drivers</Link></Menu.Item>
+            <Menu.Item key="workshop"><Link to="/employees/workshop">Workshop</Link></Menu.Item>
+          </SubMenu>
+        </SubMenu>
+ */}
+
+
+
+        <Menu.Item key="leaf-count" icon={<FundOutlined />}>
+          <Link to="/leaf-count">Leaf Count</Link>
         </Menu.Item>
-        {/* <Menu.Item key="4" icon={<Warning fontSize="35" />}>
-          <Link to="/failures">Failures</Link>
+
+        <Menu.Item key="white-board" icon={<HighlightOutlined />}>
+          <Link to="/white-board">White Board</Link>
         </Menu.Item>
-        <Menu.Item key="5" icon={<Warning fontSize="35" />}>
-          <Link to="/trips">Trips</Link>
+
+        <Menu.Item key="store" icon={<ShopOutlined />}><Link to="/store">Store</Link></Menu.Item>
+        <Menu.Item key="advance" icon={<WalletOutlined />}>
+          <Link to="/advance">Advance</Link>
         </Menu.Item>
-        <Menu.Item key="6" icon={<VerifiedUserOutlined fontSize="35" />}>
-          <Link to="/users">Drivers</Link>
-        </Menu.Item>  */}
-      
-        {/* Logout Menu Item - Floating to the right */}
-        <Menu.Item
-          key="8"
-          icon={<Notifications />}
-          onClick={handleLogout}
-          style={{
-            position: "absolute",
-            right: 0, // Float it to the right
-            top: "50%", // Vertically center it
-            transform: "translateY(-50%)", // Adjust for perfect centering
-          }}
-        >
-          Logout
-        </Menu.Item>
+        <Menu.Item key="loan-management" icon={<SettingOutlined />}><Link to="/loan-management">Loan Management</Link></Menu.Item>
       </Menu>
     </Header>
   );

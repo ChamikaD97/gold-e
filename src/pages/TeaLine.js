@@ -13,7 +13,8 @@ import CustomButton from "../components/CustomButton";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useSelector, useDispatch } from "react-redux";
-import { engines, enginesClasses, setSearch } from "../redux/engineSlice";
+import { setOfficers, setOfficerLines, setSearch } from "../redux/officerSlice";
+
 import { isLoading, setSelectedKey } from "../redux/authSlice";
 import ReactCountryFlag from "react-country-flag";
 import jsPDF from "jspdf";
@@ -29,7 +30,7 @@ const { Option } = Select;
 const { TextArea } = Input;
 
 const TeaLine = () => {
-  const { engineData, search } = useSelector((state) => state.eng);
+  const { officerData, search } = useSelector((state) => state.eng);
   const { loading, token } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const [api, contextHolder] = notification.useNotification();
@@ -40,7 +41,7 @@ const TeaLine = () => {
   };
   const [selectedRow, setSelectedRow] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [filteredData, setFilteredData] = useState(engineData);
+  const [filteredData, setFilteredData] = useState(officerData);
   const navigate = useNavigate();
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [form] = Form.useForm();
@@ -129,7 +130,7 @@ const TeaLine = () => {
     if (!value) {
       return;
     }
-    const filtered = engineData.filter((item) =>
+    const filtered = officerData.filter((item) =>
       Object.values(item).join(" ").toLowerCase().includes(value)
     );
     setFilteredData(filtered);
@@ -138,15 +139,15 @@ const TeaLine = () => {
   const fetchSuppliers = async () => {
     dispatch(setSearch());
     try {
-      // const token = await AsyncStorage.getItem("token");
-      // if (!token) return     navigate('/dashboard');
-      dispatch(isLoading(true));
-      const engineRes = await axios.get(`${API_URL}/api/engines`, {
-        headers: { Authorization: "token" },
-      });
+      // // const token = await AsyncStorage.getItem("token");
+      // // if (!token) return     navigate('/dashboard');
+      // dispatch(isLoading(true));
+      // const engineRes = await axios.get(`${API_URL}/api/engines`, {
+      //   headers: { Authorization: "token" },
+      // });
 
-      dispatch(engines(engineRes.data));
-      setFilteredData(engineData);
+      // dispatch(engines(engineRes.data));
+      setFilteredData(officerData);
 
       setTimeout(() => {
         dispatch(isLoading(false));
@@ -161,11 +162,11 @@ const TeaLine = () => {
   };
   useEffect(() => {
     if (!search) {
-      setFilteredData(engineData);
+      setFilteredData(officerData);
       return;
     }
 
-    const filtered = engineData.filter((item) =>
+    const filtered = officerData.filter((item) =>
       item.class?.toLowerCase().includes(search.toLowerCase())
     );
 
@@ -200,7 +201,7 @@ const TeaLine = () => {
       
           </div>
           
-          <h2 style={{ margin: 0 }} onClick={() => setFilteredData(engineData)}>
+          <h2 style={{ margin: 0 }} onClick={() => setFilteredData(officerData)}>
           Routes
           </h2>
           <div
@@ -212,7 +213,7 @@ const TeaLine = () => {
           >
             <Input
               placeholder="Search"
-              onClear={()=>setFilteredData(engineData)}
+              onClear={()=>setFilteredData(officerData)}
               onChange={handleSearch}
               allowClear={true}
               style={{

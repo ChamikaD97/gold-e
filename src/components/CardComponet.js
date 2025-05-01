@@ -20,7 +20,7 @@ const CardComponent = ({
   val,
   onCardClick,
 }) => {
-  const l = JSON.parse(localStorage.getItem("engineData"));
+  const l = JSON.parse(localStorage.getItem("officerData"));
 
   return (
     <div>

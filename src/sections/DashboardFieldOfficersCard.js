@@ -13,7 +13,7 @@ const DashboardFieldOfficersCard = () => {
   const API_URL = "http://13.61.26.58:5000";
 
   const dispatch = useDispatch();
-  const [enginesClassesCount, setClassEngines] = useState(0);
+  const [officerLinesCount, setClassEngines] = useState(0);
   const handleOnClick = () => {
     dispatch(setSelectedKey("3"));
     navigate("/fieldOfficers");
