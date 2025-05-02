@@ -1,4 +1,4 @@
-[
+export  const d = [
     {
       "name": "Michael Turner",
       "nic": "966410109V",

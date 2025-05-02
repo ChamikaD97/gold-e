@@ -1,3 +1,4 @@
+// File: src/layouts/MainLayout.js
 import React from "react";
 import { Layout, Typography } from "antd";
 import { useLocation, Outlet } from "react-router-dom";
@@ -11,10 +12,17 @@ const MainLayout = () => {
   const isNotFound = location.pathname === "/404";
 
   const NotFoundTextOnly = () => (
-    <div style={{ textAlign: "center", color: "#fff" ,animation: "fadeIn 1s ease-in-out"}}>
+    <div
+      style={{
+        textAlign: "center",
+        color: "#fff",
+        width: "100%",
+        animation: "fadeIn 1s ease-in-out"
+      }}
+    >
       <Title style={{ fontSize: "120px", marginBottom: 0, color: "#fff" }}>404</Title>
       <Text style={{ fontSize: "18px", color: "rgba(255,255,255,0.8)" }}>
-        Sorry, the page you visited does not exist
+        Sorry, the page you visited does not exist.
       </Text>
     </div>
   );
@@ -22,29 +30,33 @@ const MainLayout = () => {
   return (
     <Layout
       style={{
-        display: "grid",
-        gridTemplateRows: "64px 1fr",
-        minHeight: "100vh",
+        height: "100vh",
         backgroundImage: `url(${background})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
-        backgroundRepeat: "no-repeat"
+        backgroundRepeat: "no-repeat",
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column"
       }}
     >
-      <Header style={{ background: "rgba(0,0,0,0.6)", padding: "0 24px" }}>
+      <Header style={{ background: "rgba(0,0,0,0.6)", padding: "0 24px", height: 64 }}>
         <Title level={4} style={{ color: "#fff", margin: 0, lineHeight: "64px" }}>
           🌿 Company Portal
         </Title>
       </Header>
 
-      <Content style={{ padding: "24px", overflowY: "auto" }}>
+      <Content
+        style={{
+          flex: 1,
+          overflow: "hidden"
+        }}
+      >
         <div
           style={{
-            minHeight: "100%",
-            display: "flex",
-            alignItems: isNotFound ? "center" : "flex-start",
-            width: "100%",
-            flexDirection: "column"
+            height: "100%",
+            overflowY: "auto",
+            padding: 24
           }}
         >
           {isNotFound ? <NotFoundTextOnly /> : <Outlet />}

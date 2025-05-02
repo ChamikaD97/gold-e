@@ -12,6 +12,7 @@ import {
   HighlightOutlined,
   WalletOutlined
 } from "@ant-design/icons";
+import { Archive } from "@mui/icons-material";
 
 const { Header } = Layout;
 const { SubMenu } = Menu;
@@ -41,24 +42,9 @@ const HeaderComponent = () => {
           <Link to="/employees">Employees</Link>
         </Menu.Item>
 
-
-
-        {/* <SubMenu key="employees" icon={<TeamOutlined />} title="Employees">
-          <SubMenu key="executive" title="Executive">
-            <Menu.Item key="top-mgmt"><Link to="/employees/top-management">Top Management Staff</Link></Menu.Item>
-            <Menu.Item key="factory-staff"><Link to="/employees/factory">Factory Staff</Link></Menu.Item>
-            <Menu.Item key="accounts-staff"><Link to="/employees/accounts">Account Staff</Link></Menu.Item>
-            <Menu.Item key="field-staff"><Link to="/employees/field">Field Office Staff</Link></Menu.Item>
-          </SubMenu>
-          <SubMenu key="non-executive" title="Non Executive">
-            <Menu.Item key="labours"><Link to="/employees/labours">Labours</Link></Menu.Item>
-            <Menu.Item key="drivers"><Link to="/employees/drivers">Drivers</Link></Menu.Item>
-            <Menu.Item key="workshop"><Link to="/employees/workshop">Workshop</Link></Menu.Item>
-          </SubMenu>
-        </SubMenu>
- */}
-
-
+        <Menu.Item key="factory-targets" icon={<Archive />}>
+          <Link to="/factory-targets">Factory Targets</Link>
+        </Menu.Item>
 
         <Menu.Item key="leaf-count" icon={<FundOutlined />}>
           <Link to="/leaf-count">Leaf Count</Link>

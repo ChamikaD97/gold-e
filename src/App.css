@@ -1,3 +1,4 @@
+/* Global app styles */
 .App {
   text-align: center;
 }
@@ -36,30 +37,54 @@
     transform: rotate(360deg);
   }
 }
-/* styles.css */
-.card {
 
+/* Card animation and hover */
+.card {
   width: auto;
   background-color: lab(34.03% -41.06 37.63 / 0.801);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  animation: fadeIn 1s ease-out forwards; /* Apply fade-in animation */
+  animation: fadeIn 1s ease-out forwards;
   height: auto;
   border-color: rgba(3, 100, 0, 0.856);
-  border-radius: 5;
+  border-radius: 5px;
 }
 
 @keyframes fadeIn {
   0% {
-    opacity: 0; /* Start invisible */
+    opacity: 0;
   }
   100% {
-    opacity: 1; /* End fully visible */
+    opacity: 1;
   }
 }
 
 .card:hover {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  transform: scale(1.05); /* Enlarge the card */
+  transform: scale(1.05);
   background-color: lab(34.03% -41.06 37.63 / 0.801);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5); /* Add shadow for better effect */
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+
+/* Form element styling */
+.custom-input .ant-input,
+.custom-input .ant-input-number,
+.custom-input .ant-picker,
+.custom-input .ant-select-selector,
+.custom-input .ant-input-textarea {
+  border: 1px solid black !important;
+  border-radius: 4px !important;
+}
+
+/* Red error border for Ant Design validation */
+.custom-input.ant-form-item-has-error
+  .ant-input,
+.custom-input.ant-form-item-has-error
+  .ant-input-number,
+.custom-input.ant-form-item-has-error
+  .ant-select-selector,
+.custom-input.ant-form-item-has-error
+  .ant-picker,
+.custom-input.ant-form-item-has-error
+  .ant-input-textarea {
+  border-color: #ff4d4f !important;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2) !important;
 }

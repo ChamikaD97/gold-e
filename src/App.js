@@ -5,6 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import HeaderComponent from "./components/Header";
 import MainLayout from "./components/MainLayout";
 import EmployeeManagementPage from "./pages/Employees";
+import FactoryTargetAchievemenets from "./pages/FactoryTargetAchievemenets";
 
 const LayoutWithHeader = () => (
   <>
@@ -24,7 +25,7 @@ const App = () => {
         <Route element={<LayoutWithHeader />}>
           <Route index element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
-
+          <Route path="/factory-targets" element={<FactoryTargetAchievemenets />} />
           <Route path="/employees" element={<EmployeeManagementPage />} />
           <Route path="/404" element={<div>404 - Page Not Found</div>} />
           <Route path="*" element={<Navigate to="/404" replace />} />

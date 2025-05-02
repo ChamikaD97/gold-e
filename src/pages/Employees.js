@@ -6,31 +6,27 @@ import {
   Input,
   DatePicker,
   Popconfirm,
-  Row, Form,
+  Row,
+  Form,
   Col,
   Card,
   Tag
 } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import EmployeeModal from "../components/EmployeeModal";
-import employeesData from './data/employeesData.json'; // Assuming you have a JSON file with employee data
+import employeesData from './data/employeesData.json';
 
 const EmployeeManagementPage = () => {
   const [form] = Form.useForm();
   const [employees, setEmployees] = useState(employeesData);
-
- 
-  
-  
   const [editingIndex, setEditingIndex] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [search, setSearch] = useState("");
-  const [staffFilter, setStaffFilter] = useState("");
   const [dateRange, setDateRange] = useState(null);
   const [minYears, setMinYears] = useState("");
   const [maxYears, setMaxYears] = useState("");
-
+  const [currentStep, setCurrentStep] = useState(0);
   const showAddModal = () => {
     form.resetFields();
     setIsEditMode(false);
@@ -50,19 +46,48 @@ const EmployeeManagementPage = () => {
   };
 
   const handleFormSubmit = () => {
+
     form.validateFields().then((values) => {
-      if (isEditMode) {
-        const updated = [...employees];
-        updated[editingIndex] = values;
-        setEmployees(updated);
-      } else {
-        setEmployees([...employees, values]);
+      console.log("✅ All form data submitted:", values); // 👈 Logs everything
+
+      // Optional: format file info
+      if (values.image_upload && values.image_upload.length > 0) {
+        const file = values.image_upload[0].originFileObj;
+        console.log("📦 Uploaded file object:", file);
       }
+
+      // You can now send `values` to your backend or Firebase
+    }).catch((errorInfo) => {
+
+      console.warn("⚠️ Validation failed:", errorInfo);
+    });
+
+    setTimeout(() => {
       setModalVisible(false);
       form.resetFields();
-    });
-  };
+    }, 1500);
 
+  };
+  const handleFinalSubmit = () => {
+    form.validateFields().then((values) => {
+      console.log("✅ All form data submitted:", values); // 👈 Logs everything
+  
+      // Optional: format file info
+      if (values.image_upload && values.image_upload.length > 0) {
+        const file = values.image_upload[0].originFileObj;
+        console.log("📦 Uploaded file object:", file);
+      }
+  
+      // You can now send `values` to your backend or Firebase
+    }).catch((errorInfo) => {
+      console.warn("⚠️ Validation failed:", errorInfo);
+    });
+    setTimeout(() => {
+      setModalVisible(false);
+      form.resetFields();
+    }, 1500);
+  };
+  
   const matchesYears = (joined) => {
     if (!joined) return true;
     const joinedDate = new Date(joined);
@@ -79,15 +104,13 @@ const EmployeeManagementPage = () => {
       emp.name?.toLowerCase().includes(search.toLowerCase()) ||
       emp.nic?.toLowerCase().includes(search.toLowerCase());
 
-    const matchesStaff = staffFilter ? emp.staff === staffFilter : true;
-
     const matchesDate =
       dateRange && dateRange.length === 2
         ? new Date(emp.joined_date) >= dateRange[0]._d &&
         new Date(emp.joined_date) <= dateRange[1]._d
         : true;
 
-    return matchesSearch && matchesStaff && matchesDate && matchesYears(emp.joined_date);
+    return matchesSearch && matchesDate && matchesYears(emp.joined_date);
   });
 
   const columns = [
@@ -99,8 +122,6 @@ const EmployeeManagementPage = () => {
       align: "center",
       sorter: (a, b) => new Date(a.joined_date) - new Date(b.joined_date)
     },
-
-
     {
       title: "Service Years",
       dataIndex: "joined_date",
@@ -111,19 +132,15 @@ const EmployeeManagementPage = () => {
         const today = new Date();
         let years = today.getFullYear() - joined.getFullYear();
         const mDiff = today.getMonth() - joined.getMonth();
-        if (mDiff < 0 || (mDiff === 0 && today.getDate() < joined.getDate())) {
-          years--;
-        }
+        if (mDiff < 0 || (mDiff === 0 && today.getDate() < joined.getDate())) years--;
 
         let color = "default";
-        let label = `${years} yrs`;
-
         if (years <= 2) color = "red";
         else if (years <= 5) color = "orange";
         else if (years <= 9) color = "gold";
         else color = "green";
 
-        return <Tag color={color}>{label}</Tag>;
+        return <Tag color={color}>{years} yrs</Tag>;
       },
       sorter: (a, b) => {
         const getYears = (date) => {
@@ -131,15 +148,12 @@ const EmployeeManagementPage = () => {
           const today = new Date();
           let years = today.getFullYear() - joined.getFullYear();
           const mDiff = today.getMonth() - joined.getMonth();
-          if (mDiff < 0 || (mDiff === 0 && today.getDate() < joined.getDate())) {
-            years--;
-          }
+          if (mDiff < 0 || (mDiff === 0 && today.getDate() < joined.getDate())) years--;
           return years;
         };
         return getYears(a.joined_date) - getYears(b.joined_date);
       }
-    }
-    ,
+    },
     { title: "Staff", dataIndex: "staff", align: "center", sorter: (a, b) => a.staff.localeCompare(b.staff) },
     { title: "Section", dataIndex: "section", align: "center", sorter: (a, b) => a.section.localeCompare(b.section) },
     {
@@ -157,114 +171,160 @@ const EmployeeManagementPage = () => {
   ];
 
   return (
-    <Card bordered={false} style={{ background: "rgba(255, 255, 255, 0.06)" }}>
-      <Card bordered={false} style={{ background: "rgba(255, 255, 255, 0.48)", marginBottom: 16 }}>
-        <Row gutter={[16, 16]} justify="space-between" align="middle">
-          <Col xs={24} sm={12} md={2}>
-            <Button
-              icon={<ReloadOutlined />}
-              danger
-              type="primary"
-              block
-              onClick={() => {
-                setSearch("");
-                setDateRange(null);
-                setStaffFilter("");
-                setMinYears("");
-                setMaxYears("");
-              }}
-            > Reset
-            </Button>
-          </Col>
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      {/* FILTER SECTION */}
+      <div style={{ flex: "0 0 auto", marginBottom: 16 }} className="fade-in">
+        <Card
+          bordered={false}
+          style={{
+            background: "rgba(255, 255, 255, 0.3)",
+            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+            borderRadius: "12px",
+            marginBottom: 2
+          }}
+        >
+          <Row gutter={[16, 16]} justify="space-between" align="middle">
+            <Col xs={24} sm={12} md={2}>
+              <Button
+                icon={<ReloadOutlined />}
+                danger
+                type="primary"
+                block
+                onClick={() => {
+                  setSearch("");
+                  setDateRange(null);
+                  setMinYears("");
+                  setMaxYears("");
+                }}
+              >
+                Reset
+              </Button>
+            </Col>
 
-          <Col xs={24} sm={12} md={6}>
-            <Input
-              className="custom-placeholder"
-              placeholder="Search by name or NIC"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              allowClear
-              style={{ width: "100%" }}
-            />
-          </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Input
+                className="custom-placeholder"
+                placeholder="Search by name or NIC"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                allowClear
+                style={{ borderRadius: 8 }}
+              />
+            </Col>
 
-          <Col xs={24} sm={12} md={6}>
-            <DatePicker.RangePicker
-              className="custom-placeholder"
-              onChange={(dates) => setDateRange(dates)}
-              style={{ width: "100%" }}
-              placeholder={["Start Join Date", "End Join Date"]}
-            />
-          </Col>
+            <Col xs={24} sm={12} md={6}>
+              <DatePicker.RangePicker
+                className="custom-placeholder"
+                onChange={(dates) => setDateRange(dates)}
+                style={{ width: "100%", borderRadius: 8 }}
+                placeholder={["Start Join Date", "End Join Date"]}
+              />
+            </Col>
 
-          <Col xs={12} sm={12} md={4}>
-            <Input
-              placeholder="Min Years"
-              type="number"
-              className="custom-placeholder"
-              value={minYears}
-              onChange={(e) => setMinYears(e.target.value)}
-              style={{ width: "100%" }}
-            />
-          </Col>
+            <Col xs={12} sm={12} md={4}>
+              <Input
+                className="custom-placeholder"
+                placeholder="Min Years"
+                type="number"
+                value={minYears}
+                onChange={(e) => setMinYears(e.target.value)}
+                style={{ borderRadius: 8 }}
+              />
+            </Col>
 
-          <Col xs={12} sm={12} md={4}>
-            <Input
-              placeholder="Max Years"
-              type="number"
-              className="custom-placeholder"
-              value={maxYears}
-              onChange={(e) => setMaxYears(e.target.value)}
-              style={{ width: "100%" }}
-            />
-          </Col>
+            <Col xs={12} sm={12} md={4}>
+              <Input
+                className="custom-placeholder"
+                placeholder="Max Years"
+                type="number"
+                value={maxYears}
+                onChange={(e) => setMaxYears(e.target.value)}
+                style={{ borderRadius: 8 }}
+              />
+            </Col>
 
-          <Col xs={24} sm={12} md={2}>
-            <Button type="primary" onClick={showAddModal} block>
-              Add
-            </Button>
-          </Col>
-        </Row>
+            <Col xs={24} sm={12} md={2}>
+              <Button type="primary" onClick={showAddModal} block>
+                Add
+              </Button>
+            </Col>
+          </Row>
 
-        <style>
-          {`
-            .custom-placeholder::placeholder {
-              color: #444 !important;
-              opacity: 1;
-            }
-            .custom-placeholder input::placeholder {
-              color: #444 !important;
-            }
-            .ant-picker-input input::placeholder {
-              color: #444 !important;
-            }
-          `}
-        </style>
-      </Card>
+          <style>
+            {`
+              .custom-placeholder::placeholder,
+              .custom-placeholder input::placeholder,
+              .ant-picker-input input::placeholder {
+                color: #444 !important;
+                opacity: 0.8 !important;
+              }
 
-      <Table
-        dataSource={filteredEmployees}
-        columns={columns}
-        rowKey={(record, index) => index}
-        bordered
-        scroll={{ y: "calc(100vh - 340px)" }}
-        pagination={{
-          pageSize: 250,
-          showSizeChanger: true,
-          pageSizeOptions: ["5", "10", "20", "50"],
-          showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} employees`
-        }}
-      />
+              .ant-picker-input input {
+                color: #111 !important;
+              }
 
+              @keyframes fadeIn {
+                from {
+                  opacity: 0;
+                  transform: translateY(10px);
+                }
+                to {
+                  opacity: 1;
+                  transform: translateY(0);
+                }
+              }
+
+              .fade-in {
+                animation: fadeIn 0.6s ease-in-out;
+              }
+            `}
+          </style>
+        </Card>
+      </div>
+
+      {/* TABLE SECTION */}
+      <div
+        style={{ flex: 1, overflowY: "auto", scrollbarWidth: "none" }}
+        className="fade-in hide-scrollbar"
+      >
+        <Card bordered={false} style={{ background: "rgba(255, 255, 255, 0.3)" }}>
+          <Table
+            dataSource={filteredEmployees}
+            columns={columns}
+            rowKey={(record, index) => index}
+            locale={{
+              emptyText: (
+                <div style={{ padding: "20px", fontSize: "16px", color: "#888", textAlign: "center" }}>
+                  No employees found.
+                </div>
+              )
+            }}
+            bordered
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              pageSizeOptions: ["5", "10", "20", "50"],
+              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} employees`
+            }}
+            tableLayout="fixed"
+          />
+        </Card>
+      </div>
 
       <EmployeeModal
         open={modalVisible}
         isEditMode={isEditMode}
-        onCancel={() => setModalVisible(false)}
-        onSubmit={handleFormSubmit}
-        form={form}
+        onCancel={() => {
+
+          setCurrentStep(0);
+          setModalVisible(false)
+        }}
+        onSubmit={handleFinalSubmit}
+        currentStep={currentStep}
+
+        setCurrentStep={setCurrentStep} form={form}
       />
-    </Card>
+    </div>
   );
 };
 
