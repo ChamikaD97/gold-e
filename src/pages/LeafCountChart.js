@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Card, Col, Row, Select, Typography, Button
+  Card, Col, Row, Select, Typography, Button, Table
 } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
-import achievementsData from "./data/achievements.json";
+import leaf_collection_data from "./data/leaf_collection_data.json";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -24,23 +24,91 @@ const officerLineMap = {
 
 const LeafCountChart = () => {
   const [data, setData] = useState([]);
-  const [filters, setFilters] = useState({ year: "2024", month: "All", officer: "All", line: "All" });
+  const [filters, setFilters] = useState({ year: "2025", month: "All", officer: "All", line: "All" });
+  const [columns, setColumns] = useState([]);
+  const [tableData, setTableData] = useState([]);
 
   useEffect(() => {
-    setData(achievementsData);
+    setData(leaf_collection_data);
   }, []);
 
   const filteredData = useMemo(() => {
-    let result = data.filter(d => d.month.startsWith(filters.year));
-    if (filters.month !== "All") result = result.filter(d => d.month === `${filters.year}-${filters.month}`);
-    if (filters.officer !== "All") result = result.filter(d => d.field_officer === filters.officer);
-    if (filters.line !== "All") result = result.filter(d => d.line_id === filters.line);
+    let result = data.filter(d => d.date.startsWith(filters.year));
+    if (filters.month !== "All") result = result.filter(d => d.date.slice(5, 7) === filters.month);
+    if (filters.officer !== "All") result = result.filter(d => (officerLineMap[filters.officer] || []).includes(d.line));
+    if (filters.line !== "All") result = result.filter(d => d.line === filters.line);
     return result;
   }, [data, filters]);
+  useEffect(() => {
+    if (filters.month !== "All") {
+      const daysInMonth = new Date(parseInt(filters.year), parseInt(filters.month), 0).getDate();
+  
+      const dayCols = Array.from({ length: daysInMonth }, (_, i) => {
+        const day = i + 1;
+        return {
+          title: `${day}`,
+          dataIndex: `day_${day}`,
+          key: `day_${day}`,
+          align: "center",
+          width: 100,
+          render: (value) => {
+            if (!value) return null;
+            const bgColor = value.type === "Super" ? "#FFD700" : "#87CEEB"; // gold or skyblue
+            const textColor = "#000";
+            return (
+              <div
+                style={{
+                  backgroundColor: bgColor,
+                  color: textColor,
+                  fontWeight: "bold",
+                  padding: "4px",
+                  borderRadius: "4px"
+                }}
+              >
+                {value.kg}
+              </div>
+            );
+          }
+        };
+      });
+  
+      setColumns([
+        {
+          title: "Supplier ID",
+          dataIndex: "supplier_id",
+          key: "supplier_id",
+          fixed: "left",
+          align: "center",
+          width: 120
+        },
+        ...dayCols
+      ]);
+  
+      const suppliers = Array.from(new Set(filteredData.map(d => d.supplier_id))).sort();
+      const dataSource = suppliers.map(supplier_id => {
+        const row = { supplier_id };
+        const records = filteredData.filter(item => item.supplier_id === supplier_id);
+        records.forEach(item => {
+          const day = new Date(item.date).getDate();
+          row[`day_${day}`] = {
+            type: item.leaf_type,
+            kg: item.net_kg
+          };
+        });
+        return row;
+      });
+  
+      setTableData(dataSource);
+    } else {
+      setColumns([]);
+      setTableData([]);
+    }
+  }, [filteredData, filters.month]);
+  
 
-  const uniqueOfficers = ["All", ...new Set(data.map(d => d.field_officer))];
+  const uniqueOfficers = ["All", ...Object.keys(officerLineMap)];
   const filteredLines = filters.officer === "All" ? [] : ["All", ...(officerLineMap[filters.officer] || [])];
-  const uniqueMonths = ["All", ...new Set(data.filter(d => d.month.startsWith(filters.year)).map(d => d.month.slice(5)))];
+  const uniqueMonths = ["All", ...new Set(data.filter(d => d.date.startsWith(filters.year)).map(d => d.date.slice(5, 7)))];
 
   const cardStyle = {
     background: "rgba(0, 0, 0, 0.6)",
@@ -65,7 +133,7 @@ const LeafCountChart = () => {
                 danger
                 type="primary"
                 block
-                onClick={() => setFilters({ year: "2024", month: "All", officer: "All", line: "All" })}
+                onClick={() => setFilters({ year: "2025", month: "All", officer: "All", line: "All" })}
               >
                 Reset
               </Button>
@@ -75,16 +143,9 @@ const LeafCountChart = () => {
               <Select
                 value={filters.year}
                 onChange={val => setFilters(f => ({ ...f, year: val, month: "All" }))}
-                style={{
-                  width: "100%",
-                  backgroundColor: "rgba(255, 255, 255, 0.6)",
-                  color: "#fff",
-                  border: "1px solid #333",
-                  borderRadius: 6
-                }}
+                style={{ width: "100%", backgroundColor: "rgba(255, 255, 255, 0.6)", color: "#fff", border: "1px solid #333", borderRadius: 6 }}
                 dropdownStyle={{ backgroundColor: "rgba(255, 255, 255, 0.6)", color: "rgba(238, 255, 0, 0.6)" }}
                 bordered={false}
-                className="custom-select-white"
               >
                 <Option value="2024">2024</Option>
                 <Option value="2025">2025</Option>
@@ -96,12 +157,7 @@ const LeafCountChart = () => {
                 <Button
                   type={filters.officer === o ? "primary" : "default"}
                   onClick={() => setFilters(prev => ({ ...prev, officer: o, line: "All", month: "All" }))}
-                  style={{
-                    width: "100%",
-                    background: filters.officer === o ? "#1890ff" : "#000",
-                    color: "#fff",
-                    borderColor: "#333"
-                  }}
+                  style={{ width: "100%", background: filters.officer === o ? "#1890ff" : "#000", color: "#fff", borderColor: "#333" }}
                 >
                   {o}
                 </Button>
@@ -113,17 +169,12 @@ const LeafCountChart = () => {
         {filters.officer !== "All" && (
           <Card bordered={false} className="fade-in" style={cardStyle}>
             <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-              {filteredLines.filter(l => l !== "All").map((line) => (
+              {filteredLines.filter(l => l !== "All").map(line => (
                 <Col xs={8} sm={4} md={4} key={line}>
                   <Button
                     type={filters.line === line ? "primary" : "default"}
                     onClick={() => setFilters(prev => ({ ...prev, line, month: "All" }))}
-                    style={{
-                      width: "100%",
-                      background: filters.line === line ? "#1890ff" : "#000",
-                      color: "#fff",
-                      borderColor: "#333"
-                    }}
+                    style={{ width: "100%", background: filters.line === line ? "#1890ff" : "#000", color: "#fff", borderColor: "#333" }}
                   >
                     {line}
                   </Button>
@@ -141,12 +192,7 @@ const LeafCountChart = () => {
                   <Button
                     type={filters.month === m ? "primary" : "default"}
                     onClick={() => setFilters(prev => ({ ...prev, month: m }))}
-                    style={{
-                      width: "100%",
-                      background: filters.month === m ? "#1890ff" : "#000",
-                      color: "#fff",
-                      borderColor: "#333"
-                    }}
+                    style={{ width: "100%", background: filters.month === m ? "#1890ff" : "#000", color: "#fff", borderColor: "#333" }}
                   >
                     {monthMap[m]}
                   </Button>
@@ -162,30 +208,19 @@ const LeafCountChart = () => {
           </Card>
         )}
 
-        <style>{`
-          @keyframes fadeIn {
-            from {
-              opacity: 0;
-              transform: translateY(10px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-
-          .fade-in {
-            animation: fadeIn 0.6s ease-in-out;
-          }
-
-          .custom-select-white .ant-select-selector {
-            color: #fff !important;
-          }
-
-          .custom-select-white .ant-select-arrow {
-            color: #fff !important;
-          }
-        `}</style>
+        {filters.month !== "All" && (
+          <Card bordered={false} className="fade-in" style={cardStyle}>
+            <Table
+              columns={columns}
+              dataSource={tableData}
+              pagination={false}
+              scroll={{ x: "max-content" }}
+              bordered
+              size="small"
+              rowKey="supplier_id"
+            />
+          </Card>
+        )}
       </div>
     </div>
   );
