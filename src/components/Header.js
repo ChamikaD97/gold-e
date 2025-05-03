@@ -35,7 +35,7 @@ const HeaderComponent = () => {
           <Link to="/dashboard">Dashboard</Link>
         </Menu.Item>
         <Menu.Item key="suppliers" icon={<SolutionOutlined />}>
-          <Link to="/leaf-count">Suppliers</Link>
+          <Link to="/sup">Suppliers</Link>
         </Menu.Item>
 
         <Menu.Item key="employees" icon={<TeamOutlined />}>

@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { Card, Col, Row, Select, Typography, Button, Table, Space, Progress } from "antd";
-import { ReloadOutlined, PlusOutlined } from "@ant-design/icons";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  Card, Col, Row, Select, Typography, Button, Progress, Table
+} from "antd";
+import { ReloadOutlined } from "@ant-design/icons";
 import { Bar, Line, Pie } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -8,21 +10,20 @@ import {
   LinearScale,
   BarElement,
   LineElement,
-  PointElement, // ✅ Add this
+  PointElement,
   Tooltip,
   Legend,
   ArcElement
 } from "chart.js";
-
-import achievementsData from "./data/achievements.json";
 import CountUp from "react-countup";
+import achievementsData from "./data/achievements.json";
 
 ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
   LineElement,
-  PointElement, // ✅ Register this
+  PointElement,
   ArcElement,
   Tooltip,
   Legend
@@ -32,18 +33,9 @@ const { Option } = Select;
 const { Title, Text } = Typography;
 
 const monthMap = {
-  "01": "January",
-  "02": "February",
-  "03": "March",
-  "04": "April",
-  "05": "May",
-  "06": "June",
-  "07": "July",
-  "08": "August",
-  "09": "September",
-  "10": "October",
-  "11": "November",
-  "12": "December"
+  "01": "January", "02": "February", "03": "March", "04": "April",
+  "05": "May", "06": "June", "07": "July", "08": "August",
+  "09": "September", "10": "October", "11": "November", "12": "December"
 };
 
 const officerLineMap = {
@@ -54,111 +46,192 @@ const officerLineMap = {
   Udayanga: ["BA", "BK", "K", "PT", "PK", "A", "KM", "N", "DM"]
 };
 
-const FactoryTargetAchievemenets = () => {
+const FactoryTargetAchievements = () => {
   const [data, setData] = useState([]);
-  const [year, setYear] = useState("2024");
-  const [month, setMonth] = useState("All");
-  const [officer, setOfficer] = useState("All");
-  const [line, setLine] = useState("All");
-  const [filteredData, setFilteredData] = useState([]);
+  const [filters, setFilters] = useState({ year: "2024", month: "All", officer: "All", line: "All" });
 
   useEffect(() => {
     setData(achievementsData);
   }, []);
 
-  useEffect(() => {
-    let filtered = data.filter((item) => item.month.startsWith(year));
-    if (month !== "All") {
-      filtered = filtered.filter((item) => item.month === `${year}-${month}`);
-    }
-    if (officer !== "All") {
-      filtered = filtered.filter((item) => item.field_officer === officer);
-    }
-    if (line !== "All") {
-      filtered = filtered.filter((item) => item.line_id === line);
-    }
-    setFilteredData(filtered);
-  }, [data, year, month, officer, line]);
+  const filteredData = useMemo(() => {
+    let result = data.filter(d => d.month.startsWith(filters.year));
+    if (filters.month !== "All") result = result.filter(d => d.month === `${filters.year}-${filters.month}`);
+    if (filters.officer !== "All") result = result.filter(d => d.field_officer === filters.officer);
+    if (filters.line !== "All") result = result.filter(d => d.line_id === filters.line);
+    return result;
+  }, [data, filters]);
 
-  const totalTarget = filteredData.reduce((sum, d) => sum + d.target, 0);
-  const totalAchieved = filteredData.reduce((sum, d) => sum + d.achieved, 0);
-  const totalAchievedSuper = filteredData.reduce((sum, d) => sum + d.achievedSuper, 0);
-  const achievementRate = totalTarget ? ((totalAchieved / totalTarget) * 100).toFixed(2) : 0;
-  const monthlySummary = {};
+  const totalTarget = useMemo(() => filteredData.reduce((sum, d) => sum + d.target, 0), [filteredData]);
+  const totalAchieved = useMemo(() => filteredData.reduce((sum, d) => sum + d.achieved, 0), [filteredData]);
+  const totalAchievedSuper = useMemo(() => filteredData.reduce((sum, d) => sum + d.achievedSuper, 0), [filteredData]);
+  const achievementRate = useMemo(() => totalTarget ? ((totalAchieved / totalTarget) * 100).toFixed(2) : 0, [totalTarget, totalAchieved]);
 
-  filteredData.forEach(({ month, target, achieved }) => {
-    if (!monthlySummary[month]) {
-      monthlySummary[month] = { target: 0, achieved: 0 };
-    }
-    monthlySummary[month].target += target;
-    monthlySummary[month].achieved += achieved;
-  });
+  const monthlyChartData = useMemo(() => {
+    const summary = {};
+    filteredData.forEach(({ month, target, achieved }) => {
+      if (!summary[month]) summary[month] = { target: 0, achieved: 0 };
+      summary[month].target += target;
+      summary[month].achieved += achieved;
+    });
+    return Object.entries(summary).map(([month, values]) => ({
+      month,
+      ...values
+    }));
+  }, [filteredData]);
 
-  const monthlyChartData = Object.entries(monthlySummary).map(([month, values]) => ({
-    month,
-    ...values
-  }));
-
-  const lineLabels = monthlyChartData.map((d) => {
-    const monthNum = d.month.slice(5); // get MM
-    const name = monthMap[monthNum];
-    return name;
-  });
-  const lineChartData = {
-    labels: lineLabels,
+  const lineChartDatas = useMemo(() => ({
+    labels: monthlyChartData.map(d => monthMap[d.month.slice(5)]),
     datasets: [
       {
         label: "Target",
-        data: monthlyChartData.map((d) => d.target),
+        data: monthlyChartData.map(d => d.target),
         fill: false,
         borderColor: "#8884d8",
         tension: 0.3
       },
       {
         label: "Achieved",
-        data: monthlyChartData.map((d) => d.achieved),
+        data: monthlyChartData.map(d => d.achieved),
         fill: false,
         borderColor: "#52c41a",
         tension: 0.3
-      }
-    ]
-  };
-
-  const officerMap = {};
-  filteredData.forEach((d) => {
-    if (!officerMap[d.field_officer]) {
-      officerMap[d.field_officer] = { target: 0, achieved: 0 };
-    }
-    officerMap[d.field_officer].target += d.target;
-    officerMap[d.field_officer].achieved += d.achieved;
-  });
-
-  const officerChartData = Object.entries(officerMap).map(([officer, stats]) => ({
-    officer,
-    ...stats,
-    percent: stats.target ? ((stats.achieved / stats.target) * 100).toFixed(2) : 0
-  }));
-
-  const barData = {
-    labels: officerChartData.map((d) => d.officer),
-    datasets: [
+      },
       {
         label: "Achievement %",
-        data: officerChartData.map((d) => d.percent),
-        backgroundColor: "#1890ff"
+        data: monthlyChartData.map(d =>
+          d.target ? ((d.achieved / d.target) * 100).toFixed(2) : 0
+        ),
+        fill: false,
+        borderColor: "#faad14",
+        tension: 0.3,
+        yAxisID: 'percentage' // <- will need a separate Y axis
       }
     ]
+  }), [monthlyChartData]);
+  const lineChartData = useMemo(() => {
+    if (filters.month !== "All") {
+      // Show days of the selected month
+      const daysInMonth = new Date(+filters.year, +filters.month, 0).getDate(); // e.g. 30
+      const dayLabels = Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString());
+  
+      const dayDataMap = {};
+      filteredData.forEach(d => {
+        const day = d.month.split("-")[2]; // expecting YYYY-MM-DD
+        if (day) {
+          const dayNum = parseInt(day, 10);
+          if (!dayDataMap[dayNum]) {
+            dayDataMap[dayNum] = { target: 0, achieved: 0 };
+          }
+          dayDataMap[dayNum].target += d.target;
+          dayDataMap[dayNum].achieved += d.achieved;
+        }
+      });
+  
+      return {
+        labels: dayLabels,
+        datasets: [
+          
+          {
+            label: "Achieved",
+            data: dayLabels.map(day => dayDataMap[+day]?.achieved || 0),
+            fill: false,
+            borderColor: "#52c41a",
+            tension: 0.3
+          }
+        ]
+      };
+    } else {
+      // Default monthly chart
+      return {
+        labels: monthlyChartData.map(d => monthMap[d.month.slice(5)]),
+        datasets: [
+          {
+            label: "Target",
+            data: monthlyChartData.map(d => d.target),
+            fill: false,
+            borderColor: "#8884d8",
+            tension: 0.3
+          },
+          {
+            label: "Achieved",
+            data: monthlyChartData.map(d => d.achieved),
+            fill: false,
+            borderColor: "#52c41a",
+            tension: 0.3
+          },
+          {
+            label: "Achievement %",
+            data: monthlyChartData.map(d =>
+              d.target ? ((d.achieved / d.target) * 100).toFixed(2) : 0
+            ),
+            fill: false,
+            borderColor: "#faad14",
+            tension: 0.3,
+            yAxisID: 'percentage' // <- will need a separate Y axis
+          }
+        ]
+      };
+    }
+  }, [monthlyChartData, filteredData, filters]);
+  
+
+  const lineChartOptions = {
+    maintainAspectRatio: false,
+    responsive: true,
+    plugins: {
+      legend: {
+        labels: { color: "#fff" }
+      },
+      tooltip: {
+        backgroundColor: "#222",
+        titleColor: "#fff",
+        bodyColor: "#fff"
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: "#fff" },
+        grid: { display: false } // ❌ No grid lines on x-axis
+      },
+      y: {
+        display: false,
+        
+      },
+      
+    }
+  };
+
+  const officerChartData = useMemo(() => {
+    const summary = {};
+    filteredData.forEach(({ field_officer, target, achieved }) => {
+      if (!summary[field_officer]) summary[field_officer] = { target: 0, achieved: 0 };
+      summary[field_officer].target += target;
+      summary[field_officer].achieved += achieved;
+    });
+    return Object.entries(summary).map(([officer, stats]) => ({
+      officer,
+      ...stats,
+      percent: stats.target ? ((stats.achieved / stats.target) * 100).toFixed(2) : 0
+    }));
+  }, [filteredData]);
+
+  const barData = {
+    labels: officerChartData.map(d => d.officer),
+    datasets: [{
+      label: "Achievement %",
+      data: officerChartData.map(d => d.percent),
+      backgroundColor: "#1890ff"
+    }]
   };
 
   const pieData = {
-    labels: officerChartData.map((d) => d.officer),
-    datasets: [
-      {
-        label: "Achievement Share",
-        data: officerChartData.map((d) => d.achieved),
-        backgroundColor: ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#A020F0"]
-      }
-    ]
+    labels: officerChartData.map(d => d.officer),
+    datasets: [{
+      label: "Achievement Share",
+      data: officerChartData.map(d => d.achieved),
+      backgroundColor: ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#A020F0"]
+    }]
   };
 
   const columns = [
@@ -174,199 +247,168 @@ const FactoryTargetAchievemenets = () => {
     }
   ];
 
-  const uniqueOfficers = ["All", ...new Set(data.map((d) => d.field_officer))];
-  const filteredLines = officer === "All"
-    ? ["All", ...new Set(data.map((d) => d.line_id))]
-    : ["All", ...(officerLineMap[officer] || [])];
-  const uniqueMonths = ["All", ...new Set(data.filter((d) => d.month.startsWith(year)).map((d) => d.month.slice(5)))];
+  const uniqueOfficers = ["All", ...new Set(data.map(d => d.field_officer))];
+  const filteredLines = filters.officer === "All"
+    ? ["All", ...new Set(data.map(d => d.line_id))]
+    : ["All", ...(officerLineMap[filters.officer] || [])];
+  const uniqueMonths = ["All", ...new Set(data.filter(d => d.month.startsWith(filters.year)).map(d => d.month.slice(5)))];
 
-  const filterText = `Displaying data for ${month !== "All" ? monthMap[month] : "all months"} ${year}, ` +
-    `${officer !== "All" ? `Officer: ${officer}, ` : ""}` +
-    `${line !== "All" ? `Line: ${line}` : ""}`.trim();
+  const cardStyle = { background: "rgba(0, 0, 0, 0.6)", color: "rgba(206, 3, 3, 0.6)", borderRadius: 12, marginBottom: 6 };
+
+  const filterText = `Displaying data for ${filters.month !== "All" ? monthMap[filters.month] : "all months"} ${filters.year}, ` +
+    `${filters.officer !== "All" ? `Officer: ${filters.officer}, ` : ""}` +
+    `${filters.line !== "All" ? `Line: ${filters.line}` : ""}`.trim();
 
   return (
-    <Card bordered={false} style={{ background: "rgba(255, 255, 255, 0.06)", boxShadow: "none" }}>
-      <Card bordered={false} style={{ background: "rgba(255, 255, 255, 0.48)", borderRadius: 12, marginBottom: 16 }}>
-        <Row gutter={[16, 16]} justify="space-between" align="middle">
-          <Col xs={24} sm={12} md={2}>
-            <Button icon={<ReloadOutlined />} danger type="primary" block onClick={() => { setYear("2024"); setMonth("All"); setOfficer("All"); setLine("All"); }}>Reset</Button>
-          </Col>
-          <Col xs={24} sm={12} md={4}>
-            <Select value={year} onChange={(val) => { setYear(val); setMonth("All"); }} style={{ width: "100%" }}>
-              <Option value="2024">2024</Option>
-              <Option value="2025">2025</Option>
-            </Select>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Select value={officer} onChange={(val) => { setOfficer(val); setLine("All"); }} style={{ width: "100%" }}>
-              {uniqueOfficers.map((o) => <Option key={o} value={o}>{o}</Option>)}
-            </Select>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Select value={line} onChange={(val) => setLine(val)} style={{ width: "100%" }}>
-              {filteredLines.map((l) => <Option key={l} value={l}>{l}</Option>)}
-            </Select>
-          </Col>
+
+
+
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+
+      <div style={{ flex: "0 0 auto", marginBottom: 16 }} className="fade-in">
+
+
+
+        <Card bordered={false} style={{ background: "rgba(0, 0, 0, 0.6)", borderRadius: 12, marginBottom: 6 }}>
+          <Row gutter={[16, 16]}>
+            <Col md={2}><Button icon={<ReloadOutlined />} danger type="primary" block onClick={() => setFilters({ year: "2024", month: "All", officer: "All", line: "All" })}>Reset</Button></Col>
+            <Col md={4}><Select value={filters.year} onChange={val => setFilters(f => ({ ...f, year: val, month: "All" }))} style={{ width: "100%" }}><Option value="2024">2024</Option><Option value="2025">2025</Option></Select></Col>
+            <Col md={6}><Select value={filters.officer} onChange={val => setFilters(f => ({ ...f, officer: val, line: "All" }))} style={{ width: "100%" }}>{uniqueOfficers.map(o => <Option key={o} value={o}>{o}</Option>)}</Select></Col>
+            <Col md={6}><Select value={filters.line} onChange={val => setFilters(f => ({ ...f, line: val }))} style={{ width: "100%" }}>{filteredLines.map(l => <Option key={l} value={l}>{l}</Option>)}</Select></Col>
+          </Row>
+          <Row gutter={[12, 12]} style={{ marginTop: 16 }}>
+            {uniqueMonths
+              .filter((m) => m !== "All")
+              .sort() // ensure order from Jan to Dec
+              .map((m) => (
+                <Col xs={8} sm={4} md={4} key={m}>
+                  <Button
+                    type={filters.month === m ? "primary" : "default"}
+                    onClick={() => setFilters((prev) => ({ ...prev, month: m }))}
+                    style={{ width: "100%" }}
+                  >
+                    {monthMap[m]}
+                  </Button>
+                </Col>
+              ))}
+          </Row>
+
+        </Card>
+
+        <Card bordered={false} style={cardStyle}>
+
+
+          <Text strong style={{ color: "#fff", fontSize: 20 }}>{filterText}</Text>
+        </Card>
+
+        <Row gutter={[16, 16]}>
+          {[
+            { label: "Total Target", value: totalTarget },
+            { label: "Target Achievement", value: totalAchieved },
+            { label: "Super Leaf Target", value: totalTarget * 0.5 },
+            { label: "Super Leaf Achievement", value: totalAchievedSuper }
+          ].map((stat, i) => (
+            <Col key={i} md={6}>
+              <Card bordered={false} style={cardStyle}>
+                <Text strong style={{ color: "#fff", fontSize: 20 }}>{stat.label}</Text>
+                <Title level={5} style={{ color: "#fff", margin: 0, fontSize: 20 }}>
+                  <CountUp end={stat.value} duration={1.5} separator="," />
+                </Title>
+              </Card>
+            </Col>
+
+          ))}
         </Row>
 
-        {/* Month buttons row below */}
-        <Row gutter={[12, 12]} style={{ marginTop: 16 }}>
-          {uniqueMonths
-            .filter((m) => m !== "All")
-            .sort() // ensure order from Jan to Dec
-            .map((m, index) => (
-              <Col xs={8} sm={4} md={4} key={m}>
-                <Button
-                  type={month === m ? "primary" : "default"}
-                  onClick={() => setMonth(m)}
-                  style={{ width: "100%" }}
-                >
-                  {monthMap[m]}
-                </Button>
-              </Col>
-            ))}
-        </Row>
-
-
-
-
-
-      </Card>
-
-      <Text style={{ display: "block", marginBottom: 16, fontSize: 16, fontWeight: 500 }}>{filterText}</Text>
-
-      <Row gutter={[16, 16]} align="middle">
-
-        {/* left normal */}
-
-
-
-
-        <Col xs={24} sm={12} md={6}>
-          <Card bordered={false} style={{ background: "rgba(255, 255, 255, 0.6)", borderRadius: 12, marginBottom: 6 }}>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <Text style={{ fontSize: 16 }} strong>Total Target</Text>
-              <Title level={5} style={{ margin: 0 }}>
-                <CountUp end={totalTarget} duration={1.5} separator="," />
-              </Title>
-            </div>
-          </Card>
-
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card bordered={false} style={{ background: "rgba(255, 255, 255, 0.6)", borderRadius: 12, marginBottom: 6 }}>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <Text style={{ fontSize: 16 }} strong>Target Achievement</Text>
-              <Title level={5} style={{ margin: 0 }}>
-                <CountUp end={totalAchieved} duration={1.5} separator="," />
-              </Title>
-            </div>
-          </Card>
-
-        </Col>
-
-        <Col xs={24} sm={12} md={6}>
-          <Card bordered={false} style={{ background: "rgba(255, 255, 255, 0.6)", borderRadius: 12, marginBottom: 6 }}>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <Text style={{ fontSize: 16 }} strong>Super Leaf Target</Text>
-              <Title level={5} style={{ margin: 0 }}>
-                <CountUp end={totalTarget * 0.5} duration={1.5} separator="," />
-              </Title>
-            </div>
-          </Card>
-
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card bordered={false} style={{ background: "rgba(255, 255, 255, 0.6)", borderRadius: 12, marginBottom: 6 }}>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <Text style={{ fontSize: 16 }} strong>Super Leaf Achievement</Text>
-              <Title level={5} style={{ margin: 0 }}>
-                <CountUp end={totalAchievedSuper} duration={1.5} separator="," />
-              </Title>
-            </div>
-          </Card>
-
-        </Col>
-
-      </Row>
-      <Row gutter={[16, 16]} align="middle">
-
-
-
-
-
-
-        <Col xs={24} sm={12} md={12}>
-          <Card
-            bordered={false}
-            style={{ background: "rgba(255, 255, 255, 0.6)", borderRadius: 12, marginBottom: 6 }}
-          >
-            <Text strong style={{ fontSize: 16 }}>Overall Progress</Text>
-            <div style={{ marginTop: 16 }}>
-
+        <Row gutter={[16, 16]}>
+          <Col md={12}>
+            <Card bordered={false} style={cardStyle}>
+              <Text strong style={{ color: "#fff", fontSize: 20 }}>Overall Progress</Text>
               <Progress
                 percent={parseFloat(achievementRate)}
                 strokeColor="#52c41a"
-                strokeWidth={16} // 🔥 Increase bar height here
-                showInfo
+                strokeWidth={16}
                 format={(percent) => (
-                  <span style={{ fontSize: 30, fontWeight: 600 }}>
-                    <CountUp end={percent} duration={1.2} decimals={0} suffix="%" />
+                  <span style={{ fontSize: 30, color: "#fff" }}>
+                    <CountUp end={percent} suffix="%" />
                   </span>
                 )}
               />
+            </Card>
+          </Col>
 
-            </div>
-          </Card>
-        </Col>
-
-        <Col xs={24} sm={12} md={12}>
-          <Card
-            bordered={false}
-            style={{ background: "rgba(255, 255, 255, 0.6)", borderRadius: 12, marginBottom: 6 }}
-          >
-            <Text strong style={{ fontSize: 16 }}>Super Leaf Progress</Text>
-            <div style={{ marginTop: 16 }}>
+          <Col md={12}>
+            <Card bordered={false} style={cardStyle}>
+              <Text strong style={{ color: "#fff", fontSize: 20 }}>Super Leaf Progress</Text>
               <Progress
                 percent={parseFloat(((totalAchievedSuper / (totalTarget * 2)) * 100).toFixed(2))}
                 strokeColor="#faad14"
-                strokeWidth={16} // ← Increased height of the bar
-                showInfo
+                strokeWidth={16}
                 format={(percent) => (
-                  <span style={{ fontSize: 30, fontWeight: 600 }}>
-                    <CountUp end={percent} duration={1.2} decimals={0} suffix="%" />
+                  <span style={{ fontSize: 30, color: "#fff" }}>
+                    <CountUp end={percent} suffix="%" />
                   </span>
                 )}
               />
-            </div>
-          </Card>
-        </Col>
-
-
-        <Col xs={24} md={24}>
-          <Card
-            title=" Monthly Target vs Achievement"
-            bordered={false}
-            style={{ borderRadius: 12, background: "rgba(255, 255, 255, 0.6)", marginBottom: 16 }}
-          >
-            <Line data={lineChartData} />
-          </Card>
-        </Col>
+            </Card>
+          </Col>
+        </Row>
 
 
 
 
-      </Row>
+        <Row gutter={[16, 16]}>
 
 
 
+          <Col md={24}>
+            <Card bordered={false} style={cardStyle}>
+              <Text strong style={{ color: "#fff", fontSize: 20 }}>Super Leaf Progress</Text>
+              <div style={{ height: 300 }}>
+                <Line data={lineChartData} options={lineChartOptions} />
+              </div>
+            </Card>
+          </Col>
 
-    </Card>
-  );
+
+
+        </Row>
+        <style>
+          {`
+              .custom-placeholder::placeholder,
+              .custom-placeholder input::placeholder,
+              .ant-picker-input input::placeholder {
+                color: #444 !important;
+                opacity: 0.8 !important;
+              }
+
+              .ant-picker-input input {
+                color: #111 !important;
+              }
+
+              @keyframes fadeIn {
+                from {
+                  opacity: 0;
+                  transform: translateY(10px);
+                }
+                to {
+                  opacity: 1;
+                  transform: translateY(0);
+                }
+              }
+
+              .fade-in {
+                animation: fadeIn 0.6s ease-in-out;
+              }
+            `}
+        </style>
+
+      </div>
+
+
+    </div>
+
+  )
 };
 
-export default FactoryTargetAchievemenets;
+export default FactoryTargetAchievements;

@@ -71,13 +71,13 @@ const EmployeeManagementPage = () => {
   const handleFinalSubmit = () => {
     form.validateFields().then((values) => {
       console.log("✅ All form data submitted:", values); // 👈 Logs everything
-  
+
       // Optional: format file info
       if (values.image_upload && values.image_upload.length > 0) {
         const file = values.image_upload[0].originFileObj;
         console.log("📦 Uploaded file object:", file);
       }
-  
+
       // You can now send `values` to your backend or Firebase
     }).catch((errorInfo) => {
       console.warn("⚠️ Validation failed:", errorInfo);
@@ -87,7 +87,7 @@ const EmployeeManagementPage = () => {
       form.resetFields();
     }, 1500);
   };
-  
+
   const matchesYears = (joined) => {
     if (!joined) return true;
     const joinedDate = new Date(joined);
@@ -174,15 +174,8 @@ const EmployeeManagementPage = () => {
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       {/* FILTER SECTION */}
       <div style={{ flex: "0 0 auto", marginBottom: 16 }} className="fade-in">
-        <Card
-          bordered={false}
-          style={{
-            background: "rgba(255, 255, 255, 0.3)",
-            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-            borderRadius: "12px",
-            marginBottom: 2
-          }}
-        >
+        <Card bordered={false} style={{ background: "rgba(0, 0, 0, 0.6)", borderRadius: 12, marginBottom: 6 }}>
+
           <Row gutter={[16, 16]} justify="space-between" align="middle">
             <Col xs={24} sm={12} md={2}>
               <Button
@@ -287,7 +280,7 @@ const EmployeeManagementPage = () => {
         style={{ flex: 1, overflowY: "auto", scrollbarWidth: "none" }}
         className="fade-in hide-scrollbar"
       >
-        <Card bordered={false} style={{ background: "rgba(255, 255, 255, 0.3)" }}>
+        <Card bordered={false} style={{ background: "rgba(0, 0, 0, 0.6)" }}>
           <Table
             dataSource={filteredEmployees}
             columns={columns}
