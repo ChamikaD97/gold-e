@@ -76,10 +76,10 @@
   100% { background-color: #ff4d4f; }
 }
 
-/* .pulse-red {
+.pulse-red {
   animation: pulseRed 1s infinite;
 }
- */
+
 
 /* Form element styling */
 .custom-input .ant-input,

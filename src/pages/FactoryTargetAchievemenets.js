@@ -80,6 +80,21 @@ const FactoryTargetAchievements = () => {
     }));
   }, [filteredData]);
 
+
+  const dailyChartData = useMemo(() => {
+    const summary = {};
+    filteredData.forEach(({ month, target, achieved }) => {
+      const day = month.split("-")[2]; // extract DD from YYYY-MM-DD
+      if (!summary[day]) summary[day] = { target: 0, achieved: 0 };
+      summary[day].target += target;
+      summary[day].achieved += achieved;
+    });
+    return Object.entries(summary).map(([day, values]) => ({
+      day,
+      ...values
+    }));
+  }, [filteredData]);
+  
   const lineChartDatas = useMemo(() => ({
     labels: monthlyChartData.map(d => monthMap[d.month.slice(5)]),
     datasets: [
@@ -109,6 +124,12 @@ const FactoryTargetAchievements = () => {
       }
     ]
   }), [monthlyChartData]);
+
+
+
+
+
+
   const lineChartData = useMemo(() => {
     if (filters.month !== "All") {
       // Show days of the selected month
@@ -130,14 +151,31 @@ const FactoryTargetAchievements = () => {
   
       return {
         labels: dayLabels,
+        
         datasets: [
-          
+          {
+            label: "Target",
+            data: dailyChartData.map(d => d.target),
+            fill: false,
+            borderColor: "#8884d8",
+            tension: 0.3
+          },
           {
             label: "Achieved",
-            data: dayLabels.map(day => dayDataMap[+day]?.achieved || 0),
+            data: dailyChartData.map(d => d.achieved),
             fill: false,
             borderColor: "#52c41a",
             tension: 0.3
+          },
+          {
+            label: "Achievement %",
+            data: dailyChartData.map(d =>
+              d.target ? ((d.achieved / d.target) * 100).toFixed(2) : 0
+            ),
+            fill: false,
+            borderColor: "#faad14",
+            tension: 0.3,
+            yAxisID: 'percentage' // <- will need a separate Y axis
           }
         ]
       };
@@ -363,7 +401,8 @@ const FactoryTargetAchievements = () => {
 
           <Col md={24}>
             <Card bordered={false} style={cardStyle}>
-              <Text strong style={{ color: "#fff", fontSize: 20 }}>Super Leaf Progress</Text>
+              <Text strong style={{ color: "#fff", fontSize: 20 }}>Overall Progress
+              </Text>
               <div style={{ height: 300 }}>
                 <Line data={lineChartData} options={lineChartOptions} />
               </div>
