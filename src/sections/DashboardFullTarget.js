@@ -28,8 +28,8 @@ const DashboardFullTarget = (val) => {
   };
 
   useEffect(() => {
-    fetchOfficers();
-    fetchMonthlyTargets()
+   // fetchOfficers();
+   // fetchMonthlyTargets()
   }, []);
   const handleLogin = () => {
     dispatch(setSelectedKey("2"));

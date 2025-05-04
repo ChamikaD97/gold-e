@@ -63,6 +63,23 @@
   background-color: lab(34.03% -41.06 37.63 / 0.801);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
 }
+/* Add this to your CSS file or in a <style> block if using styled-components */
+.ant-table-cell.highlight-column {
+  background-color: green !important;
+  color: #fff;
+  font-weight: bold;
+  transition: background-color 8s ease-in-out;
+}
+@keyframes pulseRed {
+  0% { background-color: #ff4d4f; }
+  50% { background-color: #ffffff; }
+  100% { background-color: #ff4d4f; }
+}
+
+/* .pulse-red {
+  animation: pulseRed 1s infinite;
+}
+ */
 
 /* Form element styling */
 .custom-input .ant-input,
