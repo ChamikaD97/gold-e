@@ -14,20 +14,22 @@ export function getTotalLeaf(data, range = "today") {
     })
     .reduce((sum, d) => sum + parseFloat(d.net_kg || 0), 0);
 }
-
-export function getLastMonthSummaryByOfficer(data) {
+export function getPreviousMonthSummaryByOfficer(data) {
   if (!data || data.length === 0) return [];
 
-  // Step 1: Find latest month in the dataset
-  const months = [...new Set(data.map(d => d.month))];
-  const latestMonth = months.sort((a, b) => new Date(b) - new Date(a))[0];
+  // ✅ Get previous calendar month as 'YYYY-MM'
+  const now = new Date();
+  const year = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+  const month = now.getMonth() === 0 ? 12 : now.getMonth(); // Jan = 0, so prev month = 12
+  const previousMonth = `${year}-${month.toString().padStart(2, '0')}`;
 
-  // Step 2: Filter records for that latest month
-  const lastMonthData = data.filter(d => d.month === latestMonth);
+  console.log("Previous month:", previousMonth); // e.g., "2025-04"
 
-  // Step 3: Group by officer
+  // Filter data for the exact previous month
+  const lastMonthData = data.filter(d => d.month === previousMonth);
+
+  // Group by officer
   const grouped = {};
-
   lastMonthData.forEach(({ field_officer, target, achieved }) => {
     if (!grouped[field_officer]) {
       grouped[field_officer] = { target: 0, achieved: 0 };
@@ -36,15 +38,16 @@ export function getLastMonthSummaryByOfficer(data) {
     grouped[field_officer].achieved += achieved;
   });
 
-  // Step 4: Convert to array with progress %
+  // Return structured summary
   return Object.entries(grouped).map(([officer, { target, achieved }]) => ({
     officer,
-    month: latestMonth,
+    month: previousMonth,
     target,
     achieved,
     progress: target > 0 ? parseFloat(((achieved / target) * 100).toFixed(2)) : 0
   }));
 }
+
 
 
 export function getLatestAchievementByOfficerFromSupplierData(data, lineToOfficer, targetsByOfficer) {
@@ -146,24 +149,39 @@ export function getLeafTypeRatio(data) {
   return stats;
 }
 
-export function getTopSuppliers(data, top = 10) {
+export function getTopSuppliers(data, top = 5) {
   const now = new Date();
   const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+console.log(lastMonth, thisMonth); // 👈 Debugging line to check the date range
 
-  const totals = {};
+  const supplierTotals = {};
 
-  data.forEach(({ supplier_id, net_kg, date }) => {
+  data.forEach(({ supplier_id, net_kg, date, line }) => {
     const recordDate = new Date(date);
     if (recordDate >= lastMonth && recordDate < thisMonth) {
-      totals[supplier_id] = (totals[supplier_id] || 0) + parseFloat(net_kg || 0);
+      if (!supplierTotals[supplier_id]) {
+        supplierTotals[supplier_id] = {
+          total: 0,
+          lines: new Set()
+        };
+      }
+      supplierTotals[supplier_id].total += parseFloat(net_kg || 0);
+      if (line) supplierTotals[supplier_id].lines.add(line);
     }
   });
 
-  return Object.entries(totals)
-    .sort((a, b) => b[1] - a[1])
+  const result = Object.entries(supplierTotals)
+    .sort((a, b) => b[1].total - a[1].total)
     .slice(0, top)
-    .map(([id, total]) => ({ supplier_id: id, total }));
+    .map(([supplier_id, { total, lines }]) => ({
+      supplier_id,
+      total,
+      line: Array.from(lines)[0]
+    }));
+console.log(result); // 👈 Debugging line to check the output
+
+  return result; // 👈 returns an actual JSON array
 }
 
 export function getInactiveSuppliers(data, threshold = 6) {
@@ -208,14 +226,14 @@ export function getSuppliersMarkedXOnDate(data) {
     if (nextDate.toDateString() === targetDateStr) {
       // Find the latest record to get the latest 'line' used
       const latestRecord = records.find(r => new Date(r.date).toDateString() === lastDate.toDateString());
-      
+
       result.push({
         supplierId,
         line: latestRecord?.line || "Unknown"
       });
     }
-  
-    
+
+
   }
 
   return result;

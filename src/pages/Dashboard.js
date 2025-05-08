@@ -13,7 +13,8 @@ import {
   getLeafTypeRatio,
   getTopSuppliers,
   getSuppliersMarkedXOnDate,
-  getNewSuppliersThisMonth, getLastMonthSummaryByOfficer
+  getNewSuppliersThisMonth, getPreveiousMonthSummaryByOfficer,
+  getPreviousMonthSummaryByOfficer
 
 } from "./utils/dashboardMetrics";
 import PieLeafTypeChart from "./charts/PieLeafTypeChart";
@@ -77,7 +78,7 @@ const Dashboard = () => {
       setXSuppliers(getSuppliersMarkedXOnDate(data));
       setNewSuppliers(getNewSuppliersThisMonth(data));
       setLineTotals(getLineWiseTotals(data));
-      setLatestAchievementByOfficer(getLastMonthSummaryByOfficer(achievements))
+      setLatestAchievementByOfficer(getPreviousMonthSummaryByOfficer(achievements))
     }
     setTimeout(() => {
       dispatch(hideLoader());
@@ -133,7 +134,7 @@ const Dashboard = () => {
 
 
           <Col span={8}>
-            <Card bordered={false} style={cardStyle}>
+            <Card bordered={false}  style={cardStyle}>
               <Text strong style={{ color: "#fff", fontSize: 20 }}>Today’s Collection</Text>
               <Title level={5} style={{ color: "#fff", margin: 0, fontSize: 20 }}>
                 <CountUp end={totals.today} />                </Title>
@@ -141,7 +142,7 @@ const Dashboard = () => {
           </Col>
 
           <Col span={8}>
-            <Card bordered={false} style={cardStyle}>
+            <Card  bordered={false} style={cardStyle}>
               <Text strong style={{ color: "#fff", fontSize: 20 }}>Weekly Collection</Text>
               <Title level={5} style={{ color: "#fff", margin: 0, fontSize: 20 }}>
                 <CountUp end={totals.week} />                </Title>
@@ -157,45 +158,127 @@ const Dashboard = () => {
 
         </Row>
 
-        <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+        <Row gutter={[16, 16]}>
 
-          <Col span={8}>
-            <Card bordered={false} style={cardStyle} >
+          {/* <Col span={8}>
+            <Card  style={cardStyle} >
               <Text strong style={{ color: "#fff", fontSize: 20 }}>Leaf Type</Text>
               <PieLeafTypeChart ratios={ratios} />
             </Card>
-          </Col>
-
+          </Col> */}
           <Col span={8}>
             <Card bordered={false} style={cardStyle}>
-              <Text strong style={{ color: "#fff", fontSize: 20 }}>Top 10 Suppliers</Text>
-              <ul style={{ listStyle: "none", paddingLeft: 0 }}>
-                {topSuppliers.map((s, index) => (
-                  <li key={s.supplier_id} style={{ marginBottom: 16 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div>
-                        <Tag color={index === 0 ? "gold" : index === 1 ? "cyan" : index === 2 ? "lime" : "blue"}>
-                          #{index + 1}
-                        </Tag>
-                        <Text style={{ color: "#fff" }}>{s.supplier_id}</Text>
-                      </div>
-                      <Text style={{ color: "#fff" }}>{s.total.toFixed(2)} kg</Text>
-                    </div>
+              <Text strong style={{ color: "#fff", fontSize: 20 }}>Achievements of Last Month</Text>
+              {latestAchievementByOfficer.length && latestAchievementByOfficer.map((ach) => (
+                <div
+                  key={ach.officer}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "12px 16px",
+                    marginBottom: 12, marginTop: 12,
+                    borderRadius: 8,
+                    background: "rgba(0, 0, 0, 0.6)"
+                  }}
+                >
+                  <div>
 
-                  </li>
-                ))}
-              </ul>
+                    <Title level={5} style={{ margin: 0, color: "#fff" }}>
+                      {ach.officer}
+                    </Title>
+
+                  </div>
+
+                  <div style={{ textAlign: "right" }}>
+                    <Tag
+                      color={
+                        ach.progress >= 100 ? "green" :
+                          ach.progress >= 90 ? "blue" :
+                            "red"
+                      }
+                      style={{
+                        fontSize: 16,
+                        fontWeight: "bold",
+                        padding: "4px 12px",
+                        borderRadius: 6
+                      }}
+                    >
+                      {ach.progress}%
+                    </Tag>
+
+                  </div>
+                </div>
+              ))}
+
             </Card>
           </Col>
+          <Col span={8}>
+            <Card bordered={false} style={cardStyle}>
+              <Text strong style={{ color: "#fff", fontSize: 20 }}>Top Suppliers of Last Month</Text>
+              {topSuppliers.length && topSuppliers.map((s) => (
+                <div
+                  key={s.supplier_id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "12px 16px",
+                    marginTop: 12,
+                    marginBottom: 12,
+                    borderRadius: 8,
+                    background: "rgba(0, 0, 0, 0.6)"
+                  }}
+                >
+                  <div>
+                    <Title level={5} style={{ margin: 0, color: "#fff" }}>
+                      {s.supplier_id}
+                    </Title>
 
+                  </div>
+                  <div>
+                    <Tag
+                      color="success"
+                      style={{
+                        fontSize: 14,
+                        color: "#000",
+
+
+                        borderRadius: 6
+                      }}
+                    >
+                      {s.line}
+                    </Tag>
+
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <Tag
+                      color={
+
+                        "red"
+                      }
+                      style={{
+                        fontSize: 16,
+                        fontWeight: "bold",
+                        padding: "4px 12px",
+                        borderRadius: 6
+                      }}
+                    >
+                      {s.total.toFixed(2)} kg
+                    </Tag>
+
+                  </div>
+                </div>
+              ))}
+
+            </Card>
+          </Col>
         </Row>
-
         {/* <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
           <Col span={24}><Card style={cardStyle} ><BarLineWiseChart lineTotals={lineTotals} /></Card></Col>
         </Row> */}
-
         <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-          <Col span={12}>
+          {/* <Col span={12}>
             <Card title="Marked X Tomorrow" style={cardStyle}>
               {xSuppliers.length ? (
                 <ul style={{ paddingLeft: 20 }}>
@@ -211,7 +294,7 @@ const Dashboard = () => {
             </Card>
 
           </Col>
-          {/* <Col span={12}>
+          <Col span={12}>
             <Card style={cardStyle}>
               {newSuppliers.length ? (
                 <ul>{newSuppliers.map(id => <li key={id}>{id}</li>)}</ul>
@@ -220,60 +303,58 @@ const Dashboard = () => {
               )}
             </Card>
           </Col> */}
+          {/* <Col span={8}>
+            <Card style={cardStyle}>
+              <Text strong style={{ color: "#fff", fontSize: 20 }}>Top Suppliers of Last Month</Text>
+              {latestAchievementByOfficer.length && latestAchievementByOfficer.map((ach) => (
+                <div
+                  key={ach.officer}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "12px 16px",
+                    marginBottom: 12,
+                    borderRadius: 8,
+                    background: "rgba(0, 0, 0, 0.6)"
+                  }}
+                >
+                  <div>
+                    <Title level={5} style={{ margin: 0, color: "#fff" }}>
+                      {ach.officer}
+                    </Title>
+                    <Text type="secondary" style={{ color: "#bbb", fontSize: 13 }}>
+                      {ach.month}
+                    </Text>
+                  </div>
 
-          <Card style={cardStyle}>
-
-
-
-            {latestAchievementByOfficer.length && latestAchievementByOfficer.map((ach) => (
-              <div
-                key={ach.officer}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "12px 16px",
-                  marginBottom: 12,
-                  borderRadius: 8,
-                  background: "rgba(0, 0, 0, 0.6)"
-                }}
-              >
-                <div>
-                  <Title level={5} style={{ margin: 0, color: "#fff" }}>
-                    {ach.officer}
-                  </Title>
-                  <Text type="secondary" style={{ color: "#bbb", fontSize: 13 }}>
-                    {ach.month}
-                  </Text>
+                  <div style={{ textAlign: "right" }}>
+                    <Tag
+                      color={
+                        ach.progress >= 100 ? "green" :
+                          ach.progress >= 90 ? "blue" :
+                            "red"
+                      }
+                      style={{
+                        fontSize: 16,
+                        fontWeight: "bold",
+                        padding: "4px 12px",
+                        borderRadius: 6
+                      }}
+                    >
+                      {ach.progress}%
+                    </Tag>
+                    <Text type="secondary" style={{ display: "block", fontSize: 13, color: "#ccc" }}>
+                      {ach.achieved.toLocaleString()} / {ach.target.toLocaleString()} kg
+                    </Text>
+                  </div>
                 </div>
+              ))}
 
-                <div style={{ textAlign: "right" }}>
-                  <Tag
-                    color={
-                      ach.progress >= 100 ? "green" :
-                        ach.progress >= 90 ? "blue" :
-                          "red"
-                    }
-                    style={{
-                      fontSize: 16,
-                      fontWeight: "bold",
-                      padding: "4px 12px",
-                      borderRadius: 6
-                    }}
-                  >
-                    {ach.progress}%
-                  </Tag>
-                  <Text type="secondary" style={{ display: "block", fontSize: 13, color: "#ccc" }}>
-                    {ach.achieved.toLocaleString()} / {ach.target.toLocaleString()} kg
-                  </Text>
-                </div>
-              </div>
-            ))}
-
-          </Card>
+            </Card>
+          </Col> */}
         </Row>
       </div>
-
     </>
   );
 };
