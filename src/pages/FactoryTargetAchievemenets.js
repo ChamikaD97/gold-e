@@ -17,6 +17,9 @@ import {
 } from "chart.js";
 import CountUp from "react-countup";
 import achievementsData from "./data/achievements.json";
+import { useSelector } from "react-redux";
+
+
 
 ChartJS.register(
   CategoryScale,
@@ -38,18 +41,12 @@ const monthMap = {
   "09": "September", "10": "October", "11": "November", "12": "December"
 };
 
-const officerLineMap = {
-  Ajith: ["MT", "PH", "PW (PRIVATE)", "PP(PRIVATE)", "GO", "UG", "MP", "BM", "TP", "UP"],
-  Chamod: ["NG(PRIVATE)", "S(PRIVATE)", "DR"],
-  Udara: ["J", "T", "SELF-2", "TK", "HA", "D"],
-  Gamini: ["SELF", "DG", "ML", "MV"],
-  Udayanga: ["BA", "BK", "K", "PT", "PK", "A", "KM", "N", "DM"]
-};
+
 
 const FactoryTargetAchievements = () => {
   const [data, setData] = useState([]);
   const [filters, setFilters] = useState({ year: "2024", month: "All", officer: "All", line: "All" });
-
+  const [suppliersMarkedTomorrow, setSuppliersMarkedTomorrow] = useState([]);
   useEffect(() => {
     setData(achievementsData);
   }, []);
@@ -79,6 +76,8 @@ const FactoryTargetAchievements = () => {
       ...values
     }));
   }, [filteredData]);
+  const officerLineMap = useSelector((state) => state.officerLine.officerLineMap);
+
 
 
   const dailyChartData = useMemo(() => {
@@ -94,7 +93,7 @@ const FactoryTargetAchievements = () => {
       ...values
     }));
   }, [filteredData]);
-  
+
   const lineChartDatas = useMemo(() => ({
     labels: monthlyChartData.map(d => monthMap[d.month.slice(5)]),
     datasets: [
@@ -135,7 +134,7 @@ const FactoryTargetAchievements = () => {
       // Show days of the selected month
       const daysInMonth = new Date(+filters.year, +filters.month, 0).getDate(); // e.g. 30
       const dayLabels = Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString());
-  
+
       const dayDataMap = {};
       filteredData.forEach(d => {
         const day = d.month.split("-")[2]; // expecting YYYY-MM-DD
@@ -148,16 +147,16 @@ const FactoryTargetAchievements = () => {
           dayDataMap[dayNum].achieved += d.achieved;
         }
       });
-  
+
       return {
         labels: dayLabels,
-        
+
         datasets: [
           {
             label: "Target",
             data: dailyChartData.map(d => d.target),
             fill: false,
-            borderColor: "#8884d8",
+            borderColor: "#adasdsad",
             tension: 0.3
           },
           {
@@ -212,7 +211,7 @@ const FactoryTargetAchievements = () => {
       };
     }
   }, [monthlyChartData, filteredData, filters]);
-  
+
 
   const lineChartOptions = {
     maintainAspectRatio: false,
@@ -234,9 +233,9 @@ const FactoryTargetAchievements = () => {
       },
       y: {
         display: false,
-        
+
       },
-      
+
     }
   };
 

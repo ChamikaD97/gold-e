@@ -17,12 +17,11 @@ const CenteredCard = ({ title, style, children }) => {
     >
       <Card
         title={title}
-        bordered={true}
         style={{
          
+        borderRadius: 80,
+          backgroundColor:"rgba(0, 0, 0, 0.57)",
         
-          backgroundColor:"rgb(255, 255, 255)",
-          boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
         }}
       >
         {children}

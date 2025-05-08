@@ -1,5 +1,5 @@
 [
-  {
+  { 
     "supplier_id": "SUP002",
     "date": "2025-05-01",
     "leaf_type": "Super",
@@ -179,6 +179,43 @@
     "bag_kg": 5.8,
     "line": "PH"
   },
+
+
+  {
+    "supplier_id": "SUP188",
+    "date": "2025-05-03",
+    "leaf_type": "Super",
+    "full_kg": 109.8,
+    "gross": 113.2,
+    "net_kg": 106.9,
+    "bag_kg": 5.8,
+    "line": "PH"
+  },
+
+
+  {
+    "supplier_id": "SUP169",
+    "date": "2025-05-03",
+    "leaf_type": "Super",
+    "full_kg": 109.8,
+    "gross": 113.2,
+    "net_kg": 106.9,
+    "bag_kg": 5.8,
+    "line": "PH"
+  },
+
+  {
+    "supplier_id": "SUP154",
+    "date": "2025-05-03",
+    "leaf_type": "Super",
+    "full_kg": 109.8,
+    "gross": 113.2,
+    "net_kg": 106.9,
+    "bag_kg": 5.8,
+    "line": "PH"
+  },
+
+
   {
     "supplier_id": "SUP151",
     "date": "2025-04-03",

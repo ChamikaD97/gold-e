@@ -71,13 +71,13 @@
   transition: background-color 8s ease-in-out;
 }
 @keyframes pulseRed {
-  0% { background-color: #ff4d4f; }
-  50% { background-color: #ffffff; }
-  100% { background-color: #ff4d4f; }
+  0% { background-color: #AA0114; }
+  50% { background-color: #ffffff00; }
+  100% { background-color: #AA0114; }
 }
 
 .pulse-red {
-  animation: pulseRed 1s infinite;
+  animation: pulseRed 1.5s infinite;
 }
 
 
@@ -104,4 +104,7 @@
   .ant-input-textarea {
   border-color: #ff4d4f !important;
   box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2) !important;
+}
+.white-label .ant-form-item-label > label {
+  color: white !important;
 }

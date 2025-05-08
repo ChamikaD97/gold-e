@@ -1,17 +1,15 @@
 import { configureStore } from "@reduxjs/toolkit";
-import authReducer from "./authSlice";
-import officerSlice from "./officerSlice";
+import officerLineReducer from "./officerLineSlice";
 
+import loaderReducer from "./loaderSlice";
 
-
-
+import achievementReducer from "./achievementSlice";
 const store = configureStore({
   reducer: {
-    auth: authReducer,
-    officer: officerSlice,
-    //engFail: failureReducer,
-    //trips: tripsReducer,
-  },
+    officerLine: officerLineReducer,
+    loader: loaderReducer,
+    achievement: achievementReducer,
+  }
 });
 
 export default store;

@@ -1,94 +1,136 @@
-import React, { useState } from "react";
-import { Input } from "antd";
-import { useDispatch } from "react-redux";
-import { login, userToken } from "../redux/authSlice";
-import CenteredCard from "../components/CenteredCard";
-import CustomButton from "../components/CustomButton";
-import { ToastContainer } from "react-toastify";
-import { LockOutlined, UserOutlined } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import {
+  Card,
+  Button,
+  Input,
+  Typography,
+  Form
+} from "antd";
+import FullPageLayout from "../components/FullPageLayout";
+import icon from "../images/logo.ico";
 
-const LoginForm = () => {
-  const dispatch = useDispatch();
+const { Title, Text } = Typography;
+
+const LoginPage = () => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const API_URL = "http://13.61.26.58:5000";
+  const [userName, setUserName] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [visible, setVisible] = useState(false);
 
-  const handleRegister = () => {
-    navigate("/register");
-  };
+  useEffect(() => {
+    setTimeout(() => setVisible(true), 100);
+  }, []);
 
-  const handleLogin = async () => {
-    setIsLoading(true);
-    try {
-      const response = await axios.post(`${API_URL}/api/user/login`, {
-        comNum: "Admin",
-        password: "Admin",
-      });
+  const handleLogin = () => {
+    const users = JSON.parse(localStorage.getItem("users") || "[]");
+    const user = users.find((u) => u.userName === userName && u.password === password);
 
-      if (response.status === 200) {
-        dispatch(login(response.data.user));
-        dispatch(userToken(response.data.token));
-        navigate("/dashboard");
-      } else {
-       
-      }
-    } catch (error) {
-  //    message.error("Login failed. Please check your credentials.");
-    } finally {
-      setIsLoading(false);
+    if (user) {
+      localStorage.setItem("loggedInUser", JSON.stringify(user));
+      navigate("/dashboard");
+    } else {
+      setError("Invalid User Name or password");
     }
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        height: "100vh",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <CenteredCard>
-        <Input
-          size="large"
-          placeholder="Computer Number"
-          style={{ padding: 10 }}
-          prefix={<UserOutlined style={{ paddingRight: 5 }} />}
-        />
-        <br /> <br />
-        <Input
-          size="large"
-          placeholder="Password"
-          type="password"
-          style={{ padding: 10 }}
-          prefix={<LockOutlined style={{ paddingRight: 5 }} />}
-        />
-        <br /> <br />
+    <FullPageLayout>
+      <Card
+        bordered={false}
+        style={{
+          background: "rgba(0, 0, 0, 0.6)",
+          borderRadius: 12,
+          padding: 14,
+          width: 460,
+          color: "white",
+          opacity: visible ? 1 : 0,
+          transform: visible ? "translateY(0)" : "translateY(30px)",
+          transition: "opacity 0.6s ease, transform 0.6s ease"
+        }}
+      >
+        {/* Branding */}
         <div
           style={{
+            marginBottom: 12,
             display: "flex",
-            gap: "10px",
-            flexWrap: "wrap",
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center"
           }}
         >
-          <CustomButton
-            text="Login"
-            onClick={handleLogin}
-            type="rgba(0, 22, 145, 0.78)"
-            loading={isLoading}
+          <img
+            src={icon}
+            alt="SLMS"
+            style={{
+              width: 100,
+              height: 100,
+              marginBottom: 8,
+              borderRadius: 50,
+              border: "1px solid white"
+            }}
           />
-          <CustomButton
-            text="Register"
-            onClick={handleRegister}
-            type="rgba(53, 145, 0, 0.78)"
-          />
+          <div>
+            <div style={{ fontWeight: "bold", color: "#fff", fontSize: 22 }}>
+              SLMS
+            </div>
+            <div style={{ fontWeight: "bold", color: "#fff", fontSize: 18 }}>
+              SUPER LEAF MONITORING SYSTEM
+            </div>
+            <div style={{ fontSize: 14, color: "#ccc" }}>
+              GREENHOUSE PLANTATION (PVT) LTD
+            </div>
+          </div>
         </div>
-        <ToastContainer />
-      </CenteredCard>
-    </div>
+
+        <Form
+          layout="horizontal"
+          labelCol={{ span: 6 }}
+          wrapperCol={{ span: 18 }}
+          colon={false}
+        >
+          <Form.Item
+            label={<span style={{ color: "white" }}>User Name</span>}
+            required
+          >
+            <Input
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label={<span style={{ color: "white" }}>Password</span>}
+            required
+          >
+            <Input.Password
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </Form.Item>
+
+          {error && (
+            <Form.Item wrapperCol={{ offset: 6, span: 18 }}>
+              <Text type="danger">{error}</Text>
+            </Form.Item>
+          )}
+
+          <Form.Item wrapperCol={{ offset: 14, span: 10 }}>
+            <Button type="primary" block onClick={handleLogin}>
+              Login
+            </Button>
+          </Form.Item>
+
+          <Form.Item wrapperCol={{ span: 24 }} style={{ textAlign: "center", marginBottom: 0 }}>
+            <Text style={{ color: "#ccc" }}>
+              Don’t have an account? <Link to="/register">Register</Link>
+            </Text>
+          </Form.Item>
+        </Form>
+      </Card>
+    </FullPageLayout>
   );
 };
 
-export default LoginForm;
+export default LoginPage;

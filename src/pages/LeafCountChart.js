@@ -5,6 +5,11 @@ import {
 } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import leaf_collection_data from "./data/leaf_collection_data.json";
+import '../App.css'; // Import your CSS file here
+import { useSelector } from "react-redux";
+
+
+
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -15,19 +20,17 @@ const monthMap = {
   "09": "September", "10": "October", "11": "November", "12": "December"
 };
 
-const officerLineMap = {
-  Ajith: ["MT", "PH", "PW (PRIVATE)", "PP(PRIVATE)", "GO", "UG", "MP", "BM", "TP", "UP"],
-  Chamod: ["NG(PRIVATE)", "S(PRIVATE)", "DR"],
-  Udara: ["J", "T", "SELF-2", "TK", "HA", "D"],
-  Gamini: ["SELF", "DG", "ML", "MV"],
-  Udayanga: ["BA", "BK", "K", "PT", "PK", "A", "KM", "N", "DM"]
-};
+
+
 
 const LeafCountChart = () => {
   const [data, setData] = useState([]);
   const [filters, setFilters] = useState({ year: "2025", month: "All", officer: "All", line: "All" });
   const [columns, setColumns] = useState([]);
   const [tableData, setTableData] = useState([]);
+  const officerLineMap = useSelector((state) => state.officerLine.officerLineMap);
+
+  const [suppliersMarkedTomorrow, setSuppliersMarkedTomorrow] = useState([]);
 
   useEffect(() => {
     setData(leaf_collection_data);
@@ -46,6 +49,37 @@ const LeafCountChart = () => {
     return new Date(Math.max(...filteredData.map(d => new Date(d.date))));
   }, [filteredData]);
 
+  function getSuppliersMarkedXOnDate(data) {
+
+
+    const tomorrowDateStr = new Date();
+    tomorrowDateStr.setDate(tomorrowDateStr.getDate() + 1);
+    const targetDate = tomorrowDateStr.toDateString();
+
+    const supplierMap = {};
+
+    // Group records by supplier_id
+    data.forEach(item => {
+      const current = supplierMap[item.supplier_id] || [];
+      supplierMap[item.supplier_id] = [...current, item];
+    });
+
+    const result = [];
+    const targetDateStr = new Date(targetDate).toDateString();
+
+    for (const supplierId in supplierMap) {
+      const records = supplierMap[supplierId];
+      const lastDate = new Date(Math.max(...records.map(r => new Date(r.date))));
+      const nextDate = new Date(lastDate);
+      nextDate.setDate(nextDate.getDate() + 6);
+
+      if (nextDate.toDateString() === targetDateStr) {
+        result.push(supplierId);
+      }
+    }
+
+    return result;
+  }
 
   useEffect(() => {
     if (filters.month !== "All") {
@@ -78,12 +112,12 @@ const LeafCountChart = () => {
       const dayCols = Array.from({ length: daysInMonth }, (_, i) => {
         const day = i + 1;
         const dayKey = `day_${day}`;
-      
+
         const isTodayCol =
           todayYear === parseInt(filters.year) &&
           todayMonth === filters.month &&
           todayDate === day;
-      
+
         return {
           title: `${day}`, // keep title simple, no styling here
           dataIndex: dayKey,
@@ -95,35 +129,40 @@ const LeafCountChart = () => {
             const supplierId = row.supplier_id;
             const cellDate = new Date(`${filters.year}-${filters.month}-${String(day).padStart(2, "0")}`);
             const isHighlight = highlightDateMap[supplierId] === cellDate.toDateString();
-      
+
             let bgColor = "";
+            let fontColor = "";
             if (isHighlight) {
-              bgColor = "#ff4d4f"; // red
+              bgColor = "#AA0114"; // red
+              fontColor ='#fff'; // white
             } else if (value?.type === "Super") {
-              bgColor = "#FFD700"; // gold
+              bgColor = "#FF9900"; // gold
+
+              fontColor ='#000'; // white
             } else if (value?.type === "Normal") {
-              bgColor = "#87CEEB"; // sky blue
-            } 
-      
+              bgColor = "#003366"; // sky blue
+              fontColor ='#fff'; // white
+            }
+
             return (
-             <div
-  className={isHighlight ? "pulse-red animated-cell" : "animated-cell"}
-  style={{
-    backgroundColor: bgColor,
-    color: "#000",
-    fontWeight: "bold",
-    padding: "4px",
-    borderRadius: "4px"
-  }}
->
-  {isHighlight ? "X" : value?.kg || ""}
-</div>
+              <div
+                className={isHighlight ? "pulse-red animated-cell" : "animated-cell"}
+                style={{
+                  backgroundColor: bgColor,
+                  color: fontColor,
+                  fontWeight: "bold",
+                  padding: "4px",
+                  borderRadius: "4px"
+                }}
+              >
+                {isHighlight ? "X" : value?.kg || ""}
+              </div>
 
             );
           }
         };
       });
-      
+
 
       // 3. Build row data
       const dataSource = suppliers.map(supplierId => {
@@ -152,6 +191,13 @@ const LeafCountChart = () => {
       ]);
 
       setTableData(dataSource);
+
+
+      // Call your function with current filtered data
+      const markedTomorrow = getSuppliersMarkedXOnDate(filteredData);
+      setSuppliersMarkedTomorrow(markedTomorrow);
+
+
     } else {
       setColumns([]);
       setTableData([]);
@@ -177,105 +223,133 @@ const LeafCountChart = () => {
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ flex: "0 0 auto", marginBottom: 16 }}>
-        <Card bordered={false} className="fade-in" style={{ ...cardStyle }}>
-          <Row gutter={[16, 16]}>
-            <Col md={2}>
-              <Button
-                icon={<ReloadOutlined />}
-                danger
-                type="primary"
-                block
-                onClick={() => setFilters({ year: "2025", month: "All", officer: "All", line: "All" })}
-              >
-                Reset
-              </Button>
-            </Col>
 
-            <Col md={2}>
-              <Select
-                value={filters.year}
-                onChange={val => setFilters(f => ({ ...f, year: val, month: "All" }))}
-                style={{ width: "100%", backgroundColor: "rgba(255, 255, 255, 0.6)", color: "#fff", border: "1px solid #333", borderRadius: 6 }}
-                dropdownStyle={{ backgroundColor: "rgba(255, 255, 255, 0.6)", color: "rgba(238, 255, 0, 0.6)" }}
-                bordered={false}
-              >
-                <Option value="2024">2024</Option>
-                <Option value="2025">2025</Option>
-              </Select>
-            </Col>
-
-            {uniqueOfficers.filter(o => o !== "All").map(o => (
-              <Col xs={8} sm={4} md={4} key={o}>
+        {/* Reset + Year + Officers */}
+        <div key={`filters-${filters.year}-${filters.officer}`}>
+          <Card bordered={false} style={{ ...cardStyle }}>
+            <Row gutter={[16, 16]}>
+              <Col md={2}>
                 <Button
-                  type={filters.officer === o ? "primary" : "default"}
-                  onClick={() => setFilters(prev => ({ ...prev, officer: o, line: "All", month: "All" }))}
-                  style={{ width: "100%", background: filters.officer === o ? "#1890ff" : "#000", color: "#fff", borderColor: "#333" }}
+                  icon={<ReloadOutlined />}
+                  danger
+                  type="primary"
+                  block
+                  onClick={() => setFilters({ year: "2025", month: "All", officer: "All", line: "All" })}
                 >
-                  {o}
+                  Reset
                 </Button>
               </Col>
-            ))}
-          </Row>
-        </Card>
 
+              <Col md={2}>
+                <Select
+                  value={filters.year}
+                  onChange={val => setFilters(f => ({ ...f, year: val, month: "All" }))}
+                  style={{ width: "100%", backgroundColor: "rgba(255, 255, 255, 0.6)", color: "#fff", border: "1px solid #333", borderRadius: 6 }}
+                  dropdownStyle={{ backgroundColor: "rgba(255, 255, 255, 0.6)", color: "rgba(238, 255, 0, 0.6)" }}
+                  bordered={false}
+                >
+                  <Option value="2024">2024</Option>
+                  <Option value="2025">2025</Option>
+                </Select>
+              </Col>
+
+              {uniqueOfficers.filter(o => o !== "All").map(o => (
+                <Col xs={8} sm={4} md={4} key={o}>
+                  <Button
+                    type={filters.officer === o ? "primary" : "default"}
+                    onClick={() => setFilters(prev => ({ ...prev, officer: o, line: "All", month: "All" }))}
+                    style={{ width: "100%", background: filters.officer === o ? "#1890ff" : "#000", color: "#fff", borderColor: "#333" }}
+                  >
+                    {o}
+                  </Button>
+                </Col>
+              ))}
+            </Row>
+          </Card>
+        </div>
+
+        {/* Line filter */}
         {filters.officer !== "All" && (
-          <Card bordered={false} className="fade-in" style={cardStyle}>
-            <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-              {filteredLines.filter(l => l !== "All").map(line => (
-                <Col xs={8} sm={4} md={4} key={line}>
-                  <Button
-                    type={filters.line === line ? "primary" : "default"}
-                    onClick={() => setFilters(prev => ({ ...prev, line, month: "All" }))}
-                    style={{ width: "100%", background: filters.line === line ? "#1890ff" : "#000", color: "#fff", borderColor: "#333" }}
-                  >
-                    {line}
-                  </Button>
-                </Col>
-              ))}
-            </Row>
-          </Card>
+          <div key={`line-${filters.officer}`}>
+            <Card bordered={false} className="fade-in" style={cardStyle}>
+              <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+                {filteredLines.filter(l => l !== "All").map(line => (
+                  <Col xs={8} sm={4} md={4} key={line}>
+                    <Button
+                      type={filters.line === line ? "primary" : "default"}
+                      onClick={() => setFilters(prev => ({ ...prev, line, month: "All" }))}
+                      style={{ width: "100%", background: filters.line === line ? "#1890ff" : "#000", color: "#fff", borderColor: "#333" }}
+                    >
+                      {line}
+                    </Button>
+                  </Col>
+                ))}
+              </Row>
+            </Card>
+          </div>
         )}
 
+        {/* Month filter */}
         {filters.line !== "All" && (
-          <Card bordered={false} className="fade-in" style={cardStyle}>
-            <Row gutter={[12, 12]}>
-              {uniqueMonths.filter(m => m !== "All").sort().map(m => (
-                <Col xs={8} sm={4} md={4} key={m}>
-                  <Button
-                    type={filters.month === m ? "primary" : "default"}
-                    onClick={() => setFilters(prev => ({ ...prev, month: m }))}
-                    style={{ width: "100%", background: filters.month === m ? "#1890ff" : "#000", color: "#fff", borderColor: "#333" }}
-                  >
-                    {monthMap[m]}
-                  </Button>
-                </Col>
-              ))}
-            </Row>
-          </Card>
+          <div key={`month-${filters.line}`}>
+            <Card bordered={false} className="fade-in" style={cardStyle}>
+              <Row gutter={[12, 12]}>
+                {uniqueMonths.filter(m => m !== "All").sort().map(m => (
+                  <Col xs={8} sm={4} md={4} key={m}>
+                    <Button
+                      type={filters.month === m ? "primary" : "default"}
+                      onClick={() => setFilters(prev => ({ ...prev, month: m }))}
+                      style={{ width: "100%", background: filters.month === m ? "#1890ff" : "#000", color: "#fff", borderColor: "#333" }}
+                    >
+                      {monthMap[m]}
+                    </Button>
+                  </Col>
+                ))}
+              </Row>
+            </Card>
+          </div>
         )}
 
+        {/* Filter Summary */}
         {filters.month !== "All" && filters.officer !== "All" && filters.line !== "All" && (
-          <Card bordered={false} className="fade-in" style={cardStyle}>
-            <Text strong style={{ color: "#fff", fontSize: 20 }}>{filterText}</Text>
+          <div key={`summary-${filters.month}`}>
+            <Card bordered={false} className="fade-in" style={cardStyle}>
+              <Text strong style={{ color: "#fff", fontSize: 20 }}>{filterText}</Text>
+            </Card>
+          </div>
+        )}
+ {filters.month !== "All" && suppliersMarkedTomorrow.length > 0 && (
+          <Card bordered={false} className="fade-in" style={{ ...cardStyle, marginTop: 12 }}>
+            <Text strong style={{ color: "#fff", fontSize: 16 }}>
+              🔔 Suppliers that will be marked with 'X' tomorrow:
+            </Text>
+            <ul style={{ color: "#fff", paddingLeft: 20 }}>
+              {suppliersMarkedTomorrow.map(sid => (
+                <li key={sid}>{sid}</li>
+              ))}
+            </ul>
           </Card>
         )}
-
+        {/* Table */}
         {filters.month !== "All" && (
-          <Card bordered={false} className="fade-in" style={cardStyle}>
-            <Table
-              columns={columns}
-              dataSource={tableData}
-              pagination={false}
-              scroll={{ x: "max-content" }}
-              bordered
-              size="small"
-              rowKey="supplier_id"
-            />
-          </Card>
+          <div key={`table-${filters.month}`}>
+            <Card bordered={false} className="fade-in" style={cardStyle}>
+              <Table
+                columns={columns}
+                dataSource={tableData}
+                pagination={false}
+                scroll={{ x: "max-content" }}
+                bordered
+                size="large"
+                rowKey="supplier_id"
+              />
+            </Card>
+          </div>
         )}
       </div>
     </div>
   );
+
 };
 
 export default LeafCountChart;

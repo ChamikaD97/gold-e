@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import LoginForm from "./pages/LoginForm";
 import Dashboard from "./pages/Dashboard";
 import HeaderComponent from "./components/Header";
@@ -7,6 +7,7 @@ import MainLayout from "./components/MainLayout";
 import EmployeeManagementPage from "./pages/Employees";
 import FactoryTargetAchievemenets from "./pages/FactoryTargetAchievemenets";
 import LeafCountChart from "./pages/LeafCountChart";
+import RegisterPage from "./pages/RegistrationForm";
 
 const LayoutWithHeader = () => (
   <>
@@ -19,24 +20,22 @@ const App = () => {
   return (
     <Router>
       <Routes>
-        {/* Public Route */}
-        <Route path="/login" element={<LoginForm />} />
 
-        {/* Protected Routes inside layout */}
+        {/* ✅ Public Routes without header */}
+        <Route path="/login" element={<LoginForm />} />
+        <Route path="/register" element={<RegisterPage />} />
+
+        {/* ✅ Protected Routes with header */}
         <Route element={<LayoutWithHeader />}>
           <Route index element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/factory-targets" element={<FactoryTargetAchievemenets />} />
           <Route path="/employees" element={<EmployeeManagementPage />} />
-          <Route path="/404" element={<div>404 - Page Not Found</div>} />
           <Route path="/leaf-count" element={<LeafCountChart />} />
-
-
-
-
-          
+          <Route path="/404" element={<div>404 - Page Not Found</div>} />
           <Route path="*" element={<Navigate to="/404" replace />} />
         </Route>
+
       </Routes>
     </Router>
   );
