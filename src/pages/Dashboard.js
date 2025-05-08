@@ -52,6 +52,8 @@ const Dashboard = () => {
   const { isLoading } = useSelector((state) => state.loader);
   const achievements = useSelector((state) => state.achievement.achievements);
   const maxTotal = Math.max(...topSuppliers.map(s => s.total));
+  const officerLineMap = useSelector((state) => state.officerLine.officerLineMap);
+  const leafRound = useSelector((state) => state.commonData?.leafRound);
 
   useEffect(() => {
     dispatch(showLoader())
@@ -75,7 +77,7 @@ const Dashboard = () => {
       });
       setRatios(getLeafTypeRatio(data));
       setTopSuppliers(getTopSuppliers(data));
-      setXSuppliers(getSuppliersMarkedXOnDate(data));
+      setXSuppliers(getSuppliersMarkedXOnDate(data,  6));
       setNewSuppliers(getNewSuppliersThisMonth(data));
       setLineTotals(getLineWiseTotals(data));
       setLatestAchievementByOfficer(getPreviousMonthSummaryByOfficer(achievements))
@@ -134,7 +136,7 @@ const Dashboard = () => {
 
 
           <Col span={8}>
-            <Card bordered={false}  style={cardStyle}>
+            <Card bordered={false} style={cardStyle}>
               <Text strong style={{ color: "#fff", fontSize: 20 }}>Today’s Collection</Text>
               <Title level={5} style={{ color: "#fff", margin: 0, fontSize: 20 }}>
                 <CountUp end={totals.today} />                </Title>
@@ -142,7 +144,7 @@ const Dashboard = () => {
           </Col>
 
           <Col span={8}>
-            <Card  bordered={false} style={cardStyle}>
+            <Card bordered={false} style={cardStyle}>
               <Text strong style={{ color: "#fff", fontSize: 20 }}>Weekly Collection</Text>
               <Title level={5} style={{ color: "#fff", margin: 0, fontSize: 20 }}>
                 <CountUp end={totals.week} />                </Title>
@@ -273,12 +275,48 @@ const Dashboard = () => {
 
             </Card>
           </Col>
+          <Col span={8}>
+  <Card title="Marked X Tomorrow" style={cardStyle}>
+    {xSuppliers.length ? (
+      <ul style={{ paddingLeft: 20 }}>
+        {Object.entries(officerLineMap).map(([officer, lines]) => {
+          const officerData = xSuppliers.filter(s => lines.includes(s.line));
+
+          if (officerData.length === 0) return null;
+
+          const lineCounts = officerData.reduce((acc, { line }) => {
+            acc[line] = (acc[line] || 0) + 1;
+            return acc;
+          }, {});
+
+          return (
+            <li key={officer}>
+              <strong>{officer}</strong>
+              <ul>
+                {Object.entries(lineCounts).map(([line, count]) => (
+                  <li key={line} style={{ marginLeft: 10 }}>
+                    {line}: <strong>{count}</strong> supplier{count > 1 ? 's' : ''}
+                  </li>
+                ))}
+              </ul>
+            </li>
+          );
+        })}
+      </ul>
+    ) : (
+      <Text type="secondary">No suppliers will be marked X tomorrow.</Text>
+    )}
+  </Card>
+</Col>
+
+
         </Row>
         {/* <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
           <Col span={24}><Card style={cardStyle} ><BarLineWiseChart lineTotals={lineTotals} /></Card></Col>
         </Row> */}
         <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-          {/* <Col span={12}>
+          {/* 
+          <Col span={12}>
             <Card title="Marked X Tomorrow" style={cardStyle}>
               {xSuppliers.length ? (
                 <ul style={{ paddingLeft: 20 }}>

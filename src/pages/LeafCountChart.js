@@ -14,11 +14,6 @@ import { useSelector } from "react-redux";
 const { Option } = Select;
 const { Text } = Typography;
 
-const monthMap = {
-  "01": "January", "02": "February", "03": "March", "04": "April",
-  "05": "May", "06": "June", "07": "July", "08": "August",
-  "09": "September", "10": "October", "11": "November", "12": "December"
-};
 
 
 
@@ -29,7 +24,9 @@ const LeafCountChart = () => {
   const [columns, setColumns] = useState([]);
   const [tableData, setTableData] = useState([]);
   const officerLineMap = useSelector((state) => state.officerLine.officerLineMap);
+  const monthMap = useSelector((state) => state.commonData?.monthMap);
 
+  const leafRound = useSelector((state) => state.commonData?.leafRound);
   const [suppliersMarkedTomorrow, setSuppliersMarkedTomorrow] = useState([]);
 
   useEffect(() => {
@@ -71,7 +68,7 @@ const LeafCountChart = () => {
       const records = supplierMap[supplierId];
       const lastDate = new Date(Math.max(...records.map(r => new Date(r.date))));
       const nextDate = new Date(lastDate);
-      nextDate.setDate(nextDate.getDate() + 6);
+      nextDate.setDate(nextDate.getDate() + leafRound);
 
       if (nextDate.toDateString() === targetDateStr) {
         result.push(supplierId);
@@ -134,14 +131,14 @@ const LeafCountChart = () => {
             let fontColor = "";
             if (isHighlight) {
               bgColor = "#AA0114"; // red
-              fontColor ='#fff'; // white
+              fontColor = '#fff'; // white
             } else if (value?.type === "Super") {
               bgColor = "#FF9900"; // gold
 
-              fontColor ='#000'; // white
+              fontColor = '#000'; // white
             } else if (value?.type === "Normal") {
               bgColor = "#003366"; // sky blue
-              fontColor ='#fff'; // white
+              fontColor = '#fff'; // white
             }
 
             return (
@@ -318,7 +315,7 @@ const LeafCountChart = () => {
             </Card>
           </div>
         )}
- {filters.month !== "All" && suppliersMarkedTomorrow.length > 0 && (
+        {filters.month !== "All" && suppliersMarkedTomorrow.length > 0 && (
           <Card bordered={false} className="fade-in" style={{ ...cardStyle, marginTop: 12 }}>
             <Text strong style={{ color: "#fff", fontSize: 16 }}>
               🔔 Suppliers that will be marked with 'X' tomorrow:
@@ -340,7 +337,7 @@ const LeafCountChart = () => {
                 pagination={false}
                 scroll={{ x: "max-content" }}
                 bordered
-                size="large"
+                size="small"
                 rowKey="supplier_id"
               />
             </Card>

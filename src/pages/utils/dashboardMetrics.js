@@ -201,7 +201,7 @@ export function getInactiveSuppliers(data, threshold = 6) {
     .map(([id]) => id);
 }
 
-export function getSuppliersMarkedXOnDate(data) {
+export function getSuppliersMarkedXOnDate(data, leafRound) {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const targetDateStr = tomorrow.toDateString();
@@ -221,7 +221,7 @@ export function getSuppliersMarkedXOnDate(data) {
     const records = supplierMap[supplierId];
     const lastDate = new Date(Math.max(...records.map(r => new Date(r.date))));
     const nextDate = new Date(lastDate);
-    nextDate.setDate(nextDate.getDate() + 6);
+    nextDate.setDate(nextDate.getDate() + leafRound);
 
     if (nextDate.toDateString() === targetDateStr) {
       // Find the latest record to get the latest 'line' used
