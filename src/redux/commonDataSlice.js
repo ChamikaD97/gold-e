@@ -17,7 +17,7 @@ const commonDataSlice = createSlice({
   initialState,
   reducers: {
     setNotificationDate: (state, action) => {
-      state.tomorrow = action.payload; // Array of supplier objects
+      state.notificationDate = action.payload; // Array of supplier objects
     },
     setLeafRound: (state, action) => {
       state.range6Days = action.payload; // Object with 6 days as keys
@@ -34,5 +34,5 @@ const commonDataSlice = createSlice({
   }
 });
 
-export const { setTomorrowMarkers, setRange6DaysMarkers, clearMarkers } = commonDataSlice.actions;
+export const { setNotificationDate, setRange6DaysMarkers, clearMarkers } = commonDataSlice.actions;
 export default commonDataSlice.reducer;

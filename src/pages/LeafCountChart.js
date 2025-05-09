@@ -7,6 +7,7 @@ import { ReloadOutlined } from "@ant-design/icons";
 import leaf_collection_data from "./data/leaf_collection_data.json";
 import '../App.css'; // Import your CSS file here
 import { useSelector } from "react-redux";
+import { getSuppliersMarkedXOnDate } from "./utils/dashboardMetrics";
 
 
 
@@ -23,11 +24,13 @@ const LeafCountChart = () => {
   const [filters, setFilters] = useState({ year: "2025", month: "All", officer: "All", line: "All" });
   const [columns, setColumns] = useState([]);
   const [tableData, setTableData] = useState([]);
-  const officerLineMap = useSelector((state) => state.officerLine.officerLineMap);
+  const officerLineMap = useSelector((state) => state.officerLine?.officerLineMap || {});
   const monthMap = useSelector((state) => state.commonData?.monthMap);
+  const allLines = useSelector(state => state.officerLine.allLines || []);
 
   const leafRound = useSelector((state) => state.commonData?.leafRound);
   const [suppliersMarkedTomorrow, setSuppliersMarkedTomorrow] = useState([]);
+  const notificationDate = useSelector((state) => state.commonData?.notificationDate);
 
   useEffect(() => {
     setData(leaf_collection_data);
@@ -46,11 +49,11 @@ const LeafCountChart = () => {
     return new Date(Math.max(...filteredData.map(d => new Date(d.date))));
   }, [filteredData]);
 
-  function getSuppliersMarkedXOnDate(data) {
+  function getSupplierListMarkedXOnDate(data) {
 
 
     const tomorrowDateStr = new Date();
-    tomorrowDateStr.setDate(tomorrowDateStr.getDate() + 1);
+    tomorrowDateStr.setDate(tomorrowDateStr.getDate() + notificationDate);
     const targetDate = tomorrowDateStr.toDateString();
 
     const supplierMap = {};
@@ -191,7 +194,7 @@ const LeafCountChart = () => {
 
 
       // Call your function with current filtered data
-      const markedTomorrow = getSuppliersMarkedXOnDate(filteredData);
+      const markedTomorrow = getSupplierListMarkedXOnDate(filteredData);
       setSuppliersMarkedTomorrow(markedTomorrow);
 
 
@@ -199,7 +202,7 @@ const LeafCountChart = () => {
       setColumns([]);
       setTableData([]);
     }
-  }, [filteredData, filters.month]);
+  }, [filteredData, filters.month, notificationDate]);
 
 
   const uniqueOfficers = ["All", ...Object.keys(officerLineMap)];
@@ -225,7 +228,7 @@ const LeafCountChart = () => {
         <div key={`filters-${filters.year}-${filters.officer}`}>
           <Card bordered={false} style={{ ...cardStyle }}>
             <Row gutter={[16, 16]}>
-              <Col md={2}>
+              <Col md={1}>
                 <Button
                   icon={<ReloadOutlined />}
                   danger
@@ -233,25 +236,41 @@ const LeafCountChart = () => {
                   block
                   onClick={() => setFilters({ year: "2025", month: "All", officer: "All", line: "All" })}
                 >
-                  Reset
+
                 </Button>
               </Col>
 
               <Col md={2}>
                 <Select
+                  className="year-select"
                   value={filters.year}
                   onChange={val => setFilters(f => ({ ...f, year: val, month: "All" }))}
-                  style={{ width: "100%", backgroundColor: "rgba(255, 255, 255, 0.6)", color: "#fff", border: "1px solid #333", borderRadius: 6 }}
-                  dropdownStyle={{ backgroundColor: "rgba(255, 255, 255, 0.6)", color: "rgba(238, 255, 0, 0.6)" }}
+                  style={{
+                    width: "100%",
+                    backgroundColor: "rgba(0, 0, 0, 0.6)",
+                    color: "#fff",
+                    border: "1px solid #333",
+                    borderRadius: 6,
+                    cursor: "pointer"
+                  }}
+                  dropdownStyle={{
+                    backgroundColor: "rgba(0, 0, 0, 0.9)",
+                    color: "#fff"
+                  }}
                   bordered={false}
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().includes(input.toLowerCase())
+                  }
                 >
                   <Option value="2024">2024</Option>
                   <Option value="2025">2025</Option>
                 </Select>
               </Col>
 
+
               {uniqueOfficers.filter(o => o !== "All").map(o => (
-                <Col xs={8} sm={4} md={4} key={o}>
+                <Col xs={8} sm={4} md={3} key={o}>
                   <Button
                     type={filters.officer === o ? "primary" : "default"}
                     onClick={() => setFilters(prev => ({ ...prev, officer: o, line: "All", month: "All" }))}
@@ -261,6 +280,48 @@ const LeafCountChart = () => {
                   </Button>
                 </Col>
               ))}
+              <Col md={4}>
+                <Select
+                  showSearch
+                  className="line-select"
+                  placeholder="Select Line"
+                  value={filters.line}
+                  onChange={val => {
+                    const officerMatch = Object.entries(officerLineMap).find(
+                      ([officer, lines]) => lines.includes(val)
+                    );
+                    const matchedOfficer = officerMatch ? officerMatch[0] : "All";
+                    setFilters(f => ({
+                      ...f,
+                      line: val,
+                      officer: matchedOfficer,
+                      month: "All"
+                    }));
+                  }}
+                  style={{
+                    width: "100%",
+                    backgroundColor: "rgba(0, 0, 0, 0.6)",
+                    color: "#fff",
+                    border: "1px solid #333",
+                    borderRadius: 6,
+                    cursor: "pointer"
+                  }}
+                  dropdownStyle={{
+                    backgroundColor: "rgba(0, 0, 0, 0.9)",
+                    cursor: "pointer"
+                  }}
+                  bordered={false}
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  {allLines.map(line => (
+                    <Option key={line} value={line}>{line}</Option>
+                  ))}
+                </Select>
+              </Col>
+
             </Row>
           </Card>
         </div>
@@ -310,16 +371,15 @@ const LeafCountChart = () => {
         {/* Filter Summary */}
         {filters.month !== "All" && filters.officer !== "All" && filters.line !== "All" && (
           <div key={`summary-${filters.month}`}>
-            <Card bordered={false} className="fade-in" style={cardStyle}>
+            <Card bordered={false} className="fad-in" style={cardStyle}>
               <Text strong style={{ color: "#fff", fontSize: 20 }}>{filterText}</Text>
             </Card>
           </div>
         )}
         {filters.month !== "All" && suppliersMarkedTomorrow.length > 0 && (
-          <Card bordered={false} className="fade-in" style={{ ...cardStyle, marginTop: 12 }}>
-            <Text strong style={{ color: "#fff", fontSize: 16 }}>
-              🔔 Suppliers that will be marked with 'X' tomorrow:
-            </Text>
+          <Card bordered={false} className="fade-n" style={{ ...cardStyle, marginTop: 12 }}>
+           
+              <Text strong style={{ color: "#fff", fontSize: 20 }}>Suppliers that need to supply leaf after {notificationDate} days</Text>
             <ul style={{ color: "#fff", paddingLeft: 20 }}>
               {suppliersMarkedTomorrow.map(sid => (
                 <li key={sid}>{sid}</li>
@@ -330,7 +390,7 @@ const LeafCountChart = () => {
         {/* Table */}
         {filters.month !== "All" && (
           <div key={`table-${filters.month}`}>
-            <Card bordered={false} className="fade-in" style={cardStyle}>
+            <Card bordered={false} className="d-in" style={cardStyle}>
               <Table
                 columns={columns}
                 dataSource={tableData}

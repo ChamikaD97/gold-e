@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from "react";
-import { Card, Col, Row, Typography, Spin, Divider, Tag, Progress } from "antd";
+import { Card, Col, Row, Typography, Spin, Divider, Tag, Progress, Button } from "antd";
 import CountUp from "react-countup";
 import leaf_collection_data from "./data/leaf_collection_data.json";
 
@@ -29,7 +29,7 @@ import TeaLoader from "../components/Loader";
 import { Login } from "@mui/icons-material";
 import { setAchievements } from "../redux/achievementSlice";
 import CircularLoader from "../components/CircularLoader";
-
+import { setNotificationDate } from "../redux/commonDataSlice";
 const { Title, Text } = Typography;
 
 const cardStyle = {
@@ -54,7 +54,7 @@ const Dashboard = () => {
   const maxTotal = Math.max(...topSuppliers.map(s => s.total));
   const officerLineMap = useSelector((state) => state.officerLine.officerLineMap);
   const leafRound = useSelector((state) => state.commonData?.leafRound);
-
+  const notificationDate = useSelector((state) => state.commonData?.notificationDate);
   useEffect(() => {
     dispatch(showLoader())
     console.log(isLoading);
@@ -67,7 +67,6 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    console.log('achievements', latestAchievementByOfficer.length);
     dispatch(showLoader())
     if (data.length) {
       setTotals({
@@ -77,7 +76,6 @@ const Dashboard = () => {
       });
       setRatios(getLeafTypeRatio(data));
       setTopSuppliers(getTopSuppliers(data));
-      setXSuppliers(getSuppliersMarkedXOnDate(data,  6));
       setNewSuppliers(getNewSuppliersThisMonth(data));
       setLineTotals(getLineWiseTotals(data));
       setLatestAchievementByOfficer(getPreviousMonthSummaryByOfficer(achievements))
@@ -87,6 +85,21 @@ const Dashboard = () => {
     }, 1500);
 
   }, [data]);
+
+
+  useEffect(() => {
+
+    if (data.length) {
+console.log(notificationDate);
+
+      const notify = getSuppliersMarkedXOnDate(data, notificationDate)
+      setXSuppliers(notify);
+ 
+
+    }
+
+
+  }, [notificationDate]);
 
   if (!data.length) return <div style={{ padding: 24 }}><Spin size="large" /></div>;
 
@@ -276,38 +289,53 @@ const Dashboard = () => {
             </Card>
           </Col>
           <Col span={8}>
-  <Card title="Marked X Tomorrow" style={cardStyle}>
-    {xSuppliers.length ? (
-      <ul style={{ paddingLeft: 20 }}>
-        {Object.entries(officerLineMap).map(([officer, lines]) => {
-          const officerData = xSuppliers.filter(s => lines.includes(s.line));
+            <Card bordered={false} style={cardStyle}>
 
-          if (officerData.length === 0) return null;
 
-          const lineCounts = officerData.reduce((acc, { line }) => {
-            acc[line] = (acc[line] || 0) + 1;
-            return acc;
-          }, {});
 
-          return (
-            <li key={officer}>
-              <strong>{officer}</strong>
-              <ul>
-                {Object.entries(lineCounts).map(([line, count]) => (
-                  <li key={line} style={{ marginLeft: 10 }}>
-                    {line}: <strong>{count}</strong> supplier{count > 1 ? 's' : ''}
-                  </li>
-                ))}
-              </ul>
-            </li>
-          );
-        })}
-      </ul>
-    ) : (
-      <Text type="secondary">No suppliers will be marked X tomorrow.</Text>
-    )}
-  </Card>
-</Col>
+              <Text strong style={{ color: "#fff", fontSize: 20 }}>Suppliers that need to supply leaf after {notificationDate} days</Text>
+              <Button
+                onClick={() => dispatch(setNotificationDate(Math.max(1, notificationDate - 1)))}
+                disabled={notificationDate <= 1}
+              >
+                -1 Day
+              </Button>
+
+              <Button onClick={() => dispatch(setNotificationDate(notificationDate + 1))}
+              >
+                +1 Day
+              </Button>
+              {xSuppliers.length ? (
+                <ul style={{ paddingLeft: 20 }}>
+                  {Object.entries(officerLineMap).map(([officer, lines]) => {
+                    const officerData = xSuppliers.filter(s => lines.includes(s.line));
+
+                    if (officerData.length === 0) return null;
+
+                    const lineCounts = officerData.reduce((acc, { line }) => {
+                      acc[line] = (acc[line] || 0) + 1;
+                      return acc;
+                    }, {});
+
+                    return (
+                      <li key={officer}>
+                        <strong>{officer}</strong>
+                        <ul>
+                          {Object.entries(lineCounts).map(([line, count]) => (
+                            <li key={line} style={{ marginLeft: 10 }}>
+                              {line}: <strong>{count}</strong> supplier{count > 1 ? 's' : ''}
+                            </li>
+                          ))}
+                        </ul>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <Text type="secondary">No suppliers will be marked X tomorrow.</Text>
+              )}
+            </Card>
+          </Col>
 
 
         </Row>

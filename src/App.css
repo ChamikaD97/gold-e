@@ -14,6 +14,55 @@
   }
 }
 
+.line-select .ant-select-selector {
+  cursor: pointer;
+}
+
+/* White text for selected value */
+.ant-select-selection-item {
+  color: #fff !important;
+}
+
+/* White text for search input inside Select */
+.ant-select-selection-search-input {
+  color: #fff !important;
+}
+
+.ant-select-selection-search {
+  cursor: pointer;
+}
+/* Force pointer cursor on dropdown options */
+.ant-select-item-option {
+  cursor: pointer !important;
+}
+
+/* White text for dropdown options */
+.ant-select-item-option-content {
+  color: #fff !important;
+}
+
+/* White placeholder text */
+.ant-select-selection-placeholder {
+  color: #fff !important;
+}
+
+/* Optional: Dark background for dropdown */
+.ant-select-dropdown {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+}
+
+/* Optional: White highlight on active item */
+.ant-select-item-option-active {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #fff !important;
+}
+
+/* Optional: White highlight for selected item */
+.ant-select-item-option-selected {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  color: #fff !important;
+}
+
 .App-header {
   background-color: #005e08;
   min-height: 100vh;
@@ -25,6 +74,11 @@
   color: white;
 }
 
+.ant-select-item-option:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+}
+
 .App-link {
   color: #61dafb;
 }
@@ -33,6 +87,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -48,6 +103,7 @@
   border-color: rgba(3, 100, 0, 0.856);
   border-radius: 5px;
 }
+
 .fade-in {
   animation: zoomInFade 0.6s ease-in-out both;
 }
@@ -57,6 +113,7 @@
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -68,6 +125,7 @@
   0% {
     opacity: 0;
   }
+
   100% {
     opacity: 1;
   }
@@ -78,6 +136,7 @@
   background-color: lab(34.03% -41.06 37.63 / 0.801);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
 }
+
 /* Add this to your CSS file or in a <style> block if using styled-components */
 .ant-table-cell.highlight-column {
   background-color: green !important;
@@ -85,10 +144,19 @@
   font-weight: bold;
   transition: background-color 8s ease-in-out;
 }
+
 @keyframes pulseRed {
-  0% { background-color: #AA0114; }
-  50% { background-color: #ffffff00; }
-  100% { background-color: #AA0114; }
+  0% {
+    background-color: #AA0114;
+  }
+
+  50% {
+    background-color: #ffffff00;
+  }
+
+  100% {
+    background-color: #AA0114;
+  }
 }
 
 .pulse-red {
@@ -107,19 +175,15 @@
 }
 
 /* Red error border for Ant Design validation */
-.custom-input.ant-form-item-has-error
-  .ant-input,
-.custom-input.ant-form-item-has-error
-  .ant-input-number,
-.custom-input.ant-form-item-has-error
-  .ant-select-selector,
-.custom-input.ant-form-item-has-error
-  .ant-picker,
-.custom-input.ant-form-item-has-error
-  .ant-input-textarea {
+.custom-input.ant-form-item-has-error .ant-input,
+.custom-input.ant-form-item-has-error .ant-input-number,
+.custom-input.ant-form-item-has-error .ant-select-selector,
+.custom-input.ant-form-item-has-error .ant-picker,
+.custom-input.ant-form-item-has-error .ant-input-textarea {
   border-color: #ff4d4f !important;
   box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2) !important;
 }
-.white-label .ant-form-item-label > label {
+
+.white-label .ant-form-item-label>label {
   color: white !important;
 }
