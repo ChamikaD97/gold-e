@@ -3,14 +3,15 @@ import {
   Card, Col, Row, Select, Typography, Button, Table,
   Tooltip
 } from "antd";
-import { ReloadOutlined } from "@ant-design/icons";
+import { MinusCircleFilled, PlusCircleFilled, ReloadOutlined } from "@ant-design/icons";
 import leaf_collection_data from "./data/leaf_collection_data.json";
 import '../App.css'; // Import your CSS file here
-import { useSelector } from "react-redux";
 import { getSuppliersMarkedXOnDate } from "./utils/dashboardMetrics";
+import { setNotificationDate, setLeafRound } from "../redux/commonDataSlice";
 
 
 
+import { useDispatch, useSelector } from "react-redux";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -28,9 +29,9 @@ const LeafCountChart = () => {
   const monthMap = useSelector((state) => state.commonData?.monthMap);
   const allLines = useSelector(state => state.officerLine.allLines || []);
 
-  const leafRound = useSelector((state) => state.commonData?.leafRound);
   const [suppliersMarkedTomorrow, setSuppliersMarkedTomorrow] = useState([]);
   const notificationDate = useSelector((state) => state.commonData?.notificationDate);
+  const dispatch = useDispatch()
 
   useEffect(() => {
     setData(leaf_collection_data);
@@ -53,7 +54,7 @@ const LeafCountChart = () => {
 
 
     const tomorrowDateStr = new Date();
-    tomorrowDateStr.setDate(tomorrowDateStr.getDate() + notificationDate);
+    tomorrowDateStr.setDate(tomorrowDateStr.getDate() + 6);
     const targetDate = tomorrowDateStr.toDateString();
 
     const supplierMap = {};
@@ -71,7 +72,7 @@ const LeafCountChart = () => {
       const records = supplierMap[supplierId];
       const lastDate = new Date(Math.max(...records.map(r => new Date(r.date))));
       const nextDate = new Date(lastDate);
-      nextDate.setDate(nextDate.getDate() + leafRound);
+      nextDate.setDate(nextDate.getDate() + 6);
 
       if (nextDate.toDateString() === targetDateStr) {
         result.push(supplierId);
@@ -202,7 +203,7 @@ const LeafCountChart = () => {
       setColumns([]);
       setTableData([]);
     }
-  }, [filteredData, filters.month, notificationDate]);
+  }, [filteredData, filters.month, 6]);
 
 
   const uniqueOfficers = ["All", ...Object.keys(officerLineMap)];
@@ -240,6 +241,10 @@ const LeafCountChart = () => {
                 </Button>
               </Col>
 
+
+
+           
+
               <Col md={2}>
                 <Select
                   className="year-select"
@@ -269,18 +274,30 @@ const LeafCountChart = () => {
               </Col>
 
 
-              {uniqueOfficers.filter(o => o !== "All").map(o => (
-                <Col xs={8} sm={4} md={3} key={o}>
-                  <Button
-                    type={filters.officer === o ? "primary" : "default"}
-                    onClick={() => setFilters(prev => ({ ...prev, officer: o, line: "All", month: "All" }))}
-                    style={{ width: "100%", background: filters.officer === o ? "#1890ff" : "#000", color: "#fff", borderColor: "#333" }}
-                  >
-                    {o}
-                  </Button>
-                </Col>
-              ))}
-              <Col md={4}>
+           {uniqueOfficers.filter(o => o !== "All").map(o => (
+             <Col xs={8} sm={4} md={3} key={o}>
+               <Button
+                 type={filters.officer === o ? "primary" : "default"}
+                 onClick={() =>
+                   setFilters(prev => ({
+                     ...prev,
+                     officer: o,
+                     line: o === "Malinduwa" ? "M" : "All",
+                     month: "All"
+                   }))
+                 }
+                 style={{
+                   width: "100%",
+                   background: filters.officer === o ? "#1890ff" : "#000",
+                   color: "#fff",
+                   borderColor: "#333"
+                 }}
+               >
+                 {o}
+               </Button>
+             </Col>
+           ))}
+              <Col md={2}>
                 <Select
                   showSearch
                   className="line-select"
@@ -327,7 +344,7 @@ const LeafCountChart = () => {
         </div>
 
         {/* Line filter */}
-        {filters.officer !== "All" && (
+        {filters.line !== "M" && filters.officer !== "All" && (
           <div key={`line-${filters.officer}`}>
             <Card bordered={false} className="fade-in" style={cardStyle}>
               <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
@@ -353,7 +370,7 @@ const LeafCountChart = () => {
             <Card bordered={false} className="fade-in" style={cardStyle}>
               <Row gutter={[12, 12]}>
                 {uniqueMonths.filter(m => m !== "All").sort().map(m => (
-                  <Col xs={8} sm={4} md={4} key={m}>
+                  <Col xs={8} sm={4} md={2} key={m}>
                     <Button
                       type={filters.month === m ? "primary" : "default"}
                       onClick={() => setFilters(prev => ({ ...prev, month: m }))}
@@ -378,8 +395,8 @@ const LeafCountChart = () => {
         )}
         {filters.month !== "All" && suppliersMarkedTomorrow.length > 0 && (
           <Card bordered={false} className="fade-n" style={{ ...cardStyle, marginTop: 12 }}>
-           
-              <Text strong style={{ color: "#fff", fontSize: 20 }}>Suppliers that need to supply leaf after {notificationDate} days</Text>
+
+            <Text strong style={{ color: "#fff", fontSize: 20 }}>Suppliers that need to supply leaf after {notificationDate} days</Text>
             <ul style={{ color: "#fff", paddingLeft: 20 }}>
               {suppliersMarkedTomorrow.map(sid => (
                 <li key={sid}>{sid}</li>

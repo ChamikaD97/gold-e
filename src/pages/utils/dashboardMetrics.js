@@ -14,6 +14,83 @@ export function getTotalLeaf(data, range = "today") {
     })
     .reduce((sum, d) => sum + parseFloat(d.net_kg || 0), 0);
 }
+
+export function getMonthlyAchievementsForSupplier(data, supplierId) {
+  if (!Array.isArray(data) || !supplierId) return [];
+
+  const grouped = {};
+
+  data
+    .filter(entry => entry.supplier_id === supplierId)
+    .forEach(entry => {
+      const { date, net_kg } = entry;
+      if (!date || net_kg == null) return;
+
+      const month = new Date(date).toISOString().slice(0, 7); // "YYYY-MM"
+
+      if (!grouped[month]) {
+        grouped[month] = {
+          total: 0,
+          data: []
+        };
+      }
+
+      grouped[month].total += parseFloat(net_kg);
+      grouped[month].data.push(entry);
+    });
+
+  // Convert grouped object to array for table/chart use
+  const result = Object.entries(grouped).map(([month, { total, data }]) => ({
+    month,
+    total: parseFloat(total.toFixed(2)),
+    data
+  }));
+console.log(result); // 👈 Debugging line to check the output
+
+  return result;
+}
+export function getSupplierSummaryByDateRange(data, supplierId, startDate, endDate) {
+  if (!Array.isArray(data) || !supplierId || !startDate || !endDate) return null;
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+console.log(startDate, endDate); // 👈 Debugging line to check the output
+console.log(data); // 👈 Debugging line to check the output
+  console.log(supplierId); // 👈 Debugging line to check the output
+  
+
+
+  const filtered = data.filter(entry => {
+    return (
+      entry.supplier_id === supplierId &&
+      new Date(entry.date) >= start &&      new Date(entry.date) <= end
+    );
+  });
+
+  // Initialize totals
+  let superTotal = 0;
+  let normalTotal = 0;
+
+  filtered.forEach(entry => {
+    const { leaf_type, net_kg } = entry;
+    const amount = parseFloat(net_kg || 0);
+
+    if (leaf_type === "Super") {
+      superTotal += amount;
+    } else if (leaf_type === "Normal") {
+      normalTotal += amount;
+    }
+  });
+
+
+  const res = { filteredData: filtered,
+    superLeafTotalNetKg: parseFloat(superTotal.toFixed(2)),
+    normalLeafTotalNetKg: parseFloat(normalTotal.toFixed(2))}
+    
+  return res;
+}
+
+
 export function getPreviousMonthSummaryByOfficer(data) {
   if (!data || data.length === 0) return [];
 
@@ -23,7 +100,7 @@ export function getPreviousMonthSummaryByOfficer(data) {
   const month = now.getMonth() === 0 ? 12 : now.getMonth(); // Jan = 0, so prev month = 12
   const previousMonth = `${year}-${month.toString().padStart(2, '0')}`;
 
-  console.log("Previous month:", previousMonth); // e.g., "2025-04"
+
 
   // Filter data for the exact previous month
   const lastMonthData = data.filter(d => d.month === previousMonth);
@@ -153,7 +230,6 @@ export function getTopSuppliers(data, top = 5) {
   const now = new Date();
   const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-console.log(lastMonth, thisMonth); // 👈 Debugging line to check the date range
 
   const supplierTotals = {};
 
@@ -179,7 +255,7 @@ console.log(lastMonth, thisMonth); // 👈 Debugging line to check the date rang
       total,
       line: Array.from(lines)[0]
     }));
-console.log(result); // 👈 Debugging line to check the output
+  console.log(result); // 👈 Debugging line to check the output
 
   return result; // 👈 returns an actual JSON array
 }
@@ -201,10 +277,11 @@ export function getInactiveSuppliers(data, threshold = 6) {
     .map(([id]) => id);
 }
 
-export function getSuppliersMarkedXOnDate(data, notificationDate) {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const targetDateStr = tomorrow.toDateString();
+export function getSuppliersMarkedXOnDate(data, notificationDate, leafRound, officerLineMap) {
+  const targetDate = new Date();
+  targetDate.setDate(targetDate.getDate() + notificationDate);
+  const formatDate = date => date.toISOString().split('T')[0];
+  const targetDateStr = formatDate(targetDate);
 
   const supplierMap = {};
 
@@ -215,29 +292,38 @@ export function getSuppliersMarkedXOnDate(data, notificationDate) {
     supplierMap[item.supplier_id].push(item);
   });
 
-  const result = [];
+  const result = {};
 
   for (const supplierId in supplierMap) {
     const records = supplierMap[supplierId];
     const lastDate = new Date(Math.max(...records.map(r => new Date(r.date))));
     const nextDate = new Date(lastDate);
-    nextDate.setDate(nextDate.getDate() + notificationDate);
+    nextDate.setDate(nextDate.getDate() + leafRound);
 
-    if (nextDate.toDateString() === targetDateStr) {
-      // Find the latest record to get the latest 'line' used
-      const latestRecord = records.find(r => new Date(r.date).toDateString() === lastDate.toDateString());
+    if (formatDate(nextDate) === targetDateStr) {
+      const latestRecord = records.find(r => formatDate(new Date(r.date)) === formatDate(lastDate));
+      const line = latestRecord?.line || "Unknown";
 
-      result.push({
+      // Find officer for the line
+      const officer = Object.keys(officerLineMap).find(name =>
+        officerLineMap[name].includes(line)
+      ) || "Unassigned";
+
+      if (!result[officer]) {
+        result[officer] = [];
+      }
+
+      result[officer].push({
         supplierId,
-        line: latestRecord?.line || "Unknown"
+        line
       });
     }
-
-
   }
+  console.log(result); // 👈 Debugging line to check the output
 
   return result;
 }
+
 
 
 export function getNewSuppliersThisMonth(data) {

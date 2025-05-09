@@ -41,6 +41,7 @@ const { Title, Text } = Typography;
 
 const FactoryTargetAchievements = () => {
   const [data, setData] = useState([]);
+
   const [filters, setFilters] = useState({ year: "2024", month: "All", officer: "All", line: "All" });
   const [suppliersMarkedTomorrow, setSuppliersMarkedTomorrow] = useState([]);
   useEffect(() => {
@@ -54,6 +55,7 @@ const FactoryTargetAchievements = () => {
     if (filters.line !== "All") result = result.filter(d => d.line_id === filters.line);
     return result;
   }, [data, filters]);
+  const allLines = useSelector(state => state.officerLine.allLines || []);
 
   const totalTarget = useMemo(() => filteredData.reduce((sum, d) => sum + d.target, 0), [filteredData]);
   const totalAchieved = useMemo(() => filteredData.reduce((sum, d) => sum + d.achieved, 0), [filteredData]);
@@ -281,7 +283,7 @@ const FactoryTargetAchievements = () => {
     }
   ];
 
-  const uniqueOfficers = ["All", ...new Set(data.map(d => d.field_officer))];
+  const uniqueOfficers = ["All", ...Object.keys(officerLineMap)];
   const filteredLines = filters.officer === "All"
     ? ["All", ...new Set(data.map(d => d.line_id))]
     : ["All", ...(officerLineMap[filters.officer] || [])];
@@ -301,33 +303,166 @@ const FactoryTargetAchievements = () => {
 
       <div style={{ flex: "0 0 auto", marginBottom: 16 }} className="fade-in">
 
+        <div key={`filters-${filters.year}-${filters.officer}`}>
+          <Card bordered={false} style={{ ...cardStyle }}>
+            <Row gutter={[16, 16]}>
+              <Col md={1}>
+                <Button
+                  icon={<ReloadOutlined />}
+                  danger
+                  type="primary"
+                  block
+                  onClick={() => setFilters({ year: "2025", month: "All", officer: "All", line: "All" })}
+                >
+
+                </Button>
+              </Col>
 
 
-        <Card bordered={false} style={{ background: "rgba(0, 0, 0, 0.6)", borderRadius: 12, marginBottom: 6 }}>
-          <Row gutter={[16, 16]}>
-            <Col md={2}><Button icon={<ReloadOutlined />} danger type="primary" block onClick={() => setFilters({ year: "2024", month: "All", officer: "All", line: "All" })}>Reset</Button></Col>
-            <Col md={4}><Select value={filters.year} onChange={val => setFilters(f => ({ ...f, year: val, month: "All" }))} style={{ width: "100%" }}><Option value="2024">2024</Option><Option value="2025">2025</Option></Select></Col>
-            <Col md={6}><Select value={filters.officer} onChange={val => setFilters(f => ({ ...f, officer: val, line: "All" }))} style={{ width: "100%" }}>{uniqueOfficers.map(o => <Option key={o} value={o}>{o}</Option>)}</Select></Col>
-            <Col md={6}><Select value={filters.line} onChange={val => setFilters(f => ({ ...f, line: val }))} style={{ width: "100%" }}>{filteredLines.map(l => <Option key={l} value={l}>{l}</Option>)}</Select></Col>
-          </Row>
-          <Row gutter={[12, 12]} style={{ marginTop: 16 }}>
-            {uniqueMonths
-              .filter((m) => m !== "All")
-              .sort() // ensure order from Jan to Dec
-              .map((m) => (
-                <Col xs={8} sm={4} md={4} key={m}>
+
+
+
+              <Col md={2}>
+                <Select
+                  className="year-select"
+                  value={filters.year}
+                  onChange={val => setFilters(f => ({ ...f, year: val, month: "All" }))}
+                  style={{
+                    width: "100%",
+                    backgroundColor: "rgba(0, 0, 0, 0.6)",
+                    color: "#fff",
+                    border: "1px solid #333",
+                    borderRadius: 6,
+                    cursor: "pointer"
+                  }}
+                  dropdownStyle={{
+                    backgroundColor: "rgba(0, 0, 0, 0.9)",
+                    color: "#fff"
+                  }}
+                  bordered={false}
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  <Option value="2024">2024</Option>
+                  <Option value="2025">2025</Option>
+                </Select>
+              </Col>
+
+
+              {uniqueOfficers.filter(o => o !== "All").map(o => (
+                <Col xs={8} sm={4} md={3} key={o}>
                   <Button
-                    type={filters.month === m ? "primary" : "default"}
-                    onClick={() => setFilters((prev) => ({ ...prev, month: m }))}
-                    style={{ width: "100%" }}
+                    type={filters.officer === o ? "primary" : "default"}
+                    onClick={() =>
+                      setFilters(prev => ({
+                        ...prev,
+                        officer: o,
+                        line: o === "Malinduwa" ? "M" : "All",
+                        month: "All"
+                      }))
+                    }
+                    style={{
+                      width: "100%",
+                      background: filters.officer === o ? "#1890ff" : "#000",
+                      color: "#fff",
+                      borderColor: "#333"
+                    }}
                   >
-                    {monthMap[m]}
+                    {o}
                   </Button>
                 </Col>
               ))}
-          </Row>
 
-        </Card>
+              <Col md={2}>
+                <Select
+                  showSearch
+                  className="line-select"
+                  placeholder="Select Line"
+                  value={filters.line}
+                  onChange={val => {
+                    const officerMatch = Object.entries(officerLineMap).find(
+                      ([officer, lines]) => lines.includes(val)
+                    );
+                    const matchedOfficer = officerMatch ? officerMatch[0] : "All";
+                    setFilters(f => ({
+                      ...f,
+                      line: val,
+                      officer: matchedOfficer,
+                      month: "All"
+                    }));
+                  }}
+                  style={{
+                    width: "100%",
+                    backgroundColor: "rgba(0, 0, 0, 0.6)",
+                    color: "#fff",
+                    border: "1px solid #333",
+                    borderRadius: 6,
+                    cursor: "pointer"
+                  }}
+                  dropdownStyle={{
+                    backgroundColor: "rgba(0, 0, 0, 0.9)",
+                    cursor: "pointer"
+                  }}
+                  bordered={false}
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  {allLines.map(line => (
+                    <Option key={line} value={line}>{line}</Option>
+                  ))}
+                </Select>
+              </Col>
+
+            </Row>
+          </Card>
+        </div>
+
+        {/* Line filter */}
+        {filters.line !== "M" && filters.officer !== "All" && (
+          <div key={`line-${filters.officer}`}>
+            <Card bordered={false} className="fade-in" style={cardStyle}>
+              <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+                {filteredLines.filter(l => l !== "All").map(line => (
+                  <Col xs={8} sm={4} md={4} key={line}>
+                    <Button
+                      type={filters.line === line ? "primary" : "default"}
+                      onClick={() => setFilters(prev => ({ ...prev, line, month: "All" }))}
+                      style={{ width: "100%", background: filters.line === line ? "#1890ff" : "#000", color: "#fff", borderColor: "#333" }}
+                    >
+                      {line}
+                    </Button>
+                  </Col>
+                ))}
+              </Row>
+            </Card>
+          </div>
+        )}
+
+        {/* Month filter */}
+        {filters.line !== "All" && (
+          <div key={`month-${filters.line}`}>
+            <Card bordered={false} className="fade-in" style={cardStyle}>
+              <Row gutter={[12, 12]}>
+                {uniqueMonths.filter(m => m !== "All").sort().map(m => (
+                  <Col xs={8} sm={4} md={4} key={m}>
+                    <Button
+                      type={filters.month === m ? "primary" : "default"}
+                      onClick={() => setFilters(prev => ({ ...prev, month: m }))}
+                      style={{ width: "100%", background: filters.month === m ? "#1890ff" : "#000", color: "#fff", borderColor: "#333" }}
+                    >
+                      {monthMap[m]}
+                    </Button>
+                  </Col>
+                ))}
+              </Row>
+            </Card>
+          </div>
+        )}
+
 
         <Card bordered={false} style={cardStyle}>
 

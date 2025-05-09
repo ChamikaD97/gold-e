@@ -1,10 +1,10 @@
 
 import React, { useEffect, useState } from "react";
-import { Card, Col, Row, Typography, Spin, Divider, Tag, Progress, Button } from "antd";
+import { Card, Col, Row, Typography, Spin, Modal, Tag, Progress, Button } from "antd";
 import CountUp from "react-countup";
 import leaf_collection_data from "./data/leaf_collection_data.json";
 
-
+import { MinusCircleFilled, PlusCircleFilled } from "@ant-design/icons";
 
 
 import {
@@ -30,6 +30,8 @@ import { Login } from "@mui/icons-material";
 import { setAchievements } from "../redux/achievementSlice";
 import CircularLoader from "../components/CircularLoader";
 import { setNotificationDate } from "../redux/commonDataSlice";
+import OfficerModal from "../components/officerModel";
+import { setDailyLeafCount } from "../redux/dailyLeafCountSlice";
 const { Title, Text } = Typography;
 
 const cardStyle = {
@@ -48,22 +50,35 @@ const Dashboard = () => {
   const [newSuppliers, setNewSuppliers] = useState([]);
   const [lineTotals, setLineTotals] = useState({});
   const [latestAchievementByOfficer, setLatestAchievementByOfficer] = useState({});
+    const [latestAchievementBySupplier, setLatestAchievementBySupplier] = useState({});
   const dispatch = useDispatch()
   const { isLoading } = useSelector((state) => state.loader);
   const achievements = useSelector((state) => state.achievement.achievements);
   const maxTotal = Math.max(...topSuppliers.map(s => s.total));
   const officerLineMap = useSelector((state) => state.officerLine.officerLineMap);
-  const leafRound = useSelector((state) => state.commonData?.leafRound);
   const notificationDate = useSelector((state) => state.commonData?.notificationDate);
+  const leafRound = useSelector((state) => state.commonData?.leafRound);
+  const [selectedOfficer, setSelectedOfficer] = useState(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+
+  const officerList = Object.keys(officerLineMap);
+
+  const showOfficerDetails = (officer) => {
+    setSelectedOfficer(officer);
+    setIsModalVisible(true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalVisible(false);
+    setSelectedOfficer(null);
+  };
+
   useEffect(() => {
     dispatch(showLoader())
-    console.log(isLoading);
-    console.log("Fetching data...");
     dispatch(setAchievements(achievementsData));
-
+ dispatch(setDailyLeafCount(leaf_collection_data));
     setData(leaf_collection_data);
-    console.log("Data fetched successfully.");
-    console.log(isLoading);
+
   }, []);
 
   useEffect(() => {
@@ -89,17 +104,10 @@ const Dashboard = () => {
 
   useEffect(() => {
 
-    if (data.length) {
-console.log(notificationDate);
+    const notify = getSuppliersMarkedXOnDate(data, notificationDate, leafRound, officerLineMap)
+    setXSuppliers(notify);
 
-      const notify = getSuppliersMarkedXOnDate(data, notificationDate)
-      setXSuppliers(notify);
- 
-
-    }
-
-
-  }, [notificationDate]);
+  }, [data, notificationDate]);
 
   if (!data.length) return <div style={{ padding: 24 }}><Spin size="large" /></div>;
 
@@ -228,7 +236,7 @@ console.log(notificationDate);
 
             </Card>
           </Col>
-          <Col span={8}>
+          {/* <Col span={8}>
             <Card bordered={false} style={cardStyle}>
               <Text strong style={{ color: "#fff", fontSize: 20 }}>Top Suppliers of Last Month</Text>
               {topSuppliers.length && topSuppliers.map((s) => (
@@ -287,24 +295,100 @@ console.log(notificationDate);
               ))}
 
             </Card>
-          </Col>
-          <Col span={8}>
+          </Col> */}
+          <Col span={16}>
             <Card bordered={false} style={cardStyle}>
 
 
 
-              <Text strong style={{ color: "#fff", fontSize: 20 }}>Suppliers that need to supply leaf after {notificationDate} days</Text>
-              <Button
-                onClick={() => dispatch(setNotificationDate(Math.max(1, notificationDate - 1)))}
-                disabled={notificationDate <= 1}
-              >
-                -1 Day
-              </Button>
+              {/* <Text strong style={{ color: "#fff", fontSize: 20 }}>Suppliers that need to supply leaf after {notificationDate} days</Text> */}
+              <Row gutter={[16, 16]}>
 
-              <Button onClick={() => dispatch(setNotificationDate(notificationDate + 1))}
-              >
-                +1 Day
-              </Button>
+
+                <Col md={12}>
+
+
+                  <Button icon={<MinusCircleFilled />}
+
+                    type="primary"
+                    block onClick={() => dispatch(setNotificationDate(notificationDate - 1))}
+                  >
+                    Day
+                  </Button>
+                </Col>
+                <Col md={12}>
+
+                  <Button
+                    onClick={() => dispatch(setNotificationDate(notificationDate + 1))}
+                    disabled={6 <= 1}
+                    icon={<PlusCircleFilled />}
+
+                    type="primary"
+                    block
+                  >
+                    Day
+                  </Button>
+
+
+                </Col>
+
+
+              </Row>
+
+
+
+
+              <div style={{ padding: 24 }}>
+                <Card
+                  bordered={false}
+                  style={{ backgroundColor: "#1a1a1a", color: "#fff", borderRadius: 10 }}
+                >
+                  <Text strong style={{ color: "#fff", fontSize: 20 }}>
+                    Suppliers that need to supply leaf {" "}
+                    {notificationDate === 0
+                      ? "on Today"
+                      : notificationDate === 1
+                        ? "on Tomorrow"
+                        : `in ${notificationDate} Days`}
+                  </Text>
+
+                  {Object.entries(xSuppliers).length === 0 ? (
+                    <p style={{ marginTop: 10 }}>✅ No suppliers due.</p>
+                  ) : (
+                    <>
+                      <Row gutter={[16, 16]} style={{ marginTop: 20 }}>
+                        {officerList.map(officer => (
+                          <Col xs={24} sm={12} md={8} lg={8} xl={6} key={officer}>
+                            <Card
+                              hoverable
+                              onClick={() => showOfficerDetails(officer)}
+                              style={{
+                                backgroundColor: "#000",
+                                color: "#fff",
+                                border: "1px solid #333",
+                                borderRadius: 10,
+                                textAlign: "center"
+                              }}
+                            >
+                              <Text style={{ color: "#fff", fontSize: 16 }}>{officer}</Text>
+                            </Card>
+                          </Col>
+                        ))}
+                      </Row>
+
+                      <OfficerModal
+                        selectedOfficer={selectedOfficer}
+                        xSuppliers={xSuppliers}
+                        isVisible={isModalVisible}
+                        data ={data}
+                        onClose={handleModalClose}
+                       notificationDate={notificationDate}
+                      />
+
+                    </>
+                  )}
+                </Card>
+              </div>
               {xSuppliers.length ? (
                 <ul style={{ paddingLeft: 20 }}>
                   {Object.entries(officerLineMap).map(([officer, lines]) => {

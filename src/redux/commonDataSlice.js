@@ -2,7 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import { notification } from "antd";
 
 const initialState = {
-  notificationDate: 2,
+  notificationDate: 1,
   leafRound: 6,
   monthMap: {
     "01": "January", "02": "February", "03": "March", "04": "April",
@@ -20,7 +20,7 @@ const commonDataSlice = createSlice({
       state.notificationDate = action.payload; // Array of supplier objects
     },
     setLeafRound: (state, action) => {
-      state.range6Days = action.payload; // Object with 6 days as keys
+      state.leafRound = action.payload; // Object with 6 days as keys
     },
     clearMarkers: (state) => {
       state.notificationDate = 2; // Reset to default value
@@ -34,5 +34,5 @@ const commonDataSlice = createSlice({
   }
 });
 
-export const { setNotificationDate, setRange6DaysMarkers, clearMarkers } = commonDataSlice.actions;
+export const { setNotificationDate, setRange6DaysMarkers,setLeafRound, clearMarkers } = commonDataSlice.actions;
 export default commonDataSlice.reducer;

@@ -8,7 +8,7 @@ import EmployeeManagementPage from "./pages/Employees";
 import FactoryTargetAchievemenets from "./pages/FactoryTargetAchievemenets";
 import LeafCountChart from "./pages/LeafCountChart";
 import RegisterPage from "./pages/RegistrationForm";
-
+import SupplierById from "./pages/SupplierById";
 const LayoutWithHeader = () => (
   <>
     <HeaderComponent />
@@ -32,6 +32,9 @@ const App = () => {
           <Route path="/factory-targets" element={<FactoryTargetAchievemenets />} />
           <Route path="/employees" element={<EmployeeManagementPage />} />
           <Route path="/leaf-count" element={<LeafCountChart />} />
+
+        <Route path="/supplier/:id" element={<SupplierById />} />
+
           <Route path="/404" element={<div>404 - Page Not Found</div>} />
           <Route path="*" element={<Navigate to="/404" replace />} />
         </Route>

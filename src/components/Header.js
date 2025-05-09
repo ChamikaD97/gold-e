@@ -44,13 +44,13 @@ const HeaderComponent = () => {
           <Link to="/dashboard">Dashboard</Link>
         </Menu.Item>
         <Menu.Item key="suppliers" icon={<SolutionOutlined />}>
-          <Link to="/sup">Suppliers</Link>
+          <Link to="/suppliers">Suppliers</Link>
         </Menu.Item>
         <Menu.Item key="employees" icon={<TeamOutlined />}>
           <Link to="/employees">Employees</Link>
         </Menu.Item>
         <Menu.Item key="factory-targets" icon={<Archive />}>
-          <Link to="/factory-targets">Factory Targets</Link>
+          <Link to="/factory-targets">Factory Targets & Achievements</Link>
         </Menu.Item>
         <Menu.Item key="leaf-count" icon={<FundOutlined />}>
           <Link to="/leaf-count">Leaf Count</Link>
@@ -64,9 +64,9 @@ const HeaderComponent = () => {
         <Menu.Item key="advance" icon={<WalletOutlined />}>
           <Link to="/advance">Advance</Link>
         </Menu.Item>
-        <Menu.Item key="loan-management" icon={<SettingOutlined />}>
+        {/* <Menu.Item key="loan-management" icon={<SettingOutlined />}>
           <Link to="/loan-management">Loan Management</Link>
-        </Menu.Item>
+        </Menu.Item> */}
       </Menu>
 
       {/* Logout Button */}
