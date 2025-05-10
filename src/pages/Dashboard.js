@@ -50,7 +50,7 @@ const Dashboard = () => {
   const [newSuppliers, setNewSuppliers] = useState([]);
   const [lineTotals, setLineTotals] = useState({});
   const [latestAchievementByOfficer, setLatestAchievementByOfficer] = useState({});
-    const [latestAchievementBySupplier, setLatestAchievementBySupplier] = useState({});
+  const [latestAchievementBySupplier, setLatestAchievementBySupplier] = useState({});
   const dispatch = useDispatch()
   const { isLoading } = useSelector((state) => state.loader);
   const achievements = useSelector((state) => state.achievement.achievements);
@@ -76,9 +76,8 @@ const Dashboard = () => {
   useEffect(() => {
     dispatch(showLoader())
     dispatch(setAchievements(achievementsData));
- dispatch(setDailyLeafCount(leaf_collection_data));
+    dispatch(setDailyLeafCount(leaf_collection_data));
     setData(leaf_collection_data);
-
   }, []);
 
   useEffect(() => {
@@ -380,9 +379,9 @@ const Dashboard = () => {
                         selectedOfficer={selectedOfficer}
                         xSuppliers={xSuppliers}
                         isVisible={isModalVisible}
-                        data ={data}
+                        data={data}
                         onClose={handleModalClose}
-                       notificationDate={notificationDate}
+                        notificationDate={notificationDate}
                       />
 
                     </>

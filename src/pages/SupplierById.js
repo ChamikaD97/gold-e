@@ -5,7 +5,6 @@ import {
   Col,
   Row,
   Select,
-  Button,
   notification,
   Typography,
 } from "antd";
@@ -27,10 +26,21 @@ const SupplierById = () => {
   };
 
   const cardStyle = {
-    background: "rgba(0, 0, 0, 0.6)",
-    color: "#fff",
+    background: "rgba(0, 0, 0, 0.65)",
+    color: "#eee",
     borderRadius: 12,
+    padding: 12,
+    boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
     marginBottom: 16,
+  };
+
+  const selectStyle = {
+    width: "100%",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    color: "#fff",
+    border: "1px solid #333",
+    borderRadius: 6,
+    cursor: "pointer"
   };
 
   const [filters, setFilters] = useState({
@@ -56,18 +66,6 @@ const SupplierById = () => {
 
   const allMonthKeys = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
 
-  const isBeforeFromDate = (year, month) => {
-    const from = new Date(`${filters.fromYear}-${filters.fromMonth}-01`);
-    const current = new Date(`${year}-${month}-01`);
-    return current < from;
-  };
-
-  const isAfterToDate = (year, month) => {
-    const to = new Date(`${filters.toYear}-${filters.toMonth}-01`);
-    const current = new Date(`${year}-${month}-01`);
-    return current > to;
-  };
-
   useEffect(() => {
     const supplier = supplier_list.find((s) => s.supplierId === id);
     if (supplier) {
@@ -75,7 +73,9 @@ const SupplierById = () => {
     } else {
       openNotificationWithIcon("error", "Supplier not found");
     }
+  }, [id]);
 
+  useEffect(() => {
     const fromDate = `${filters.fromYear}-${filters.fromMonth}-01`;
     const toDate = new Date(
       parseInt(filters.toYear),
@@ -100,7 +100,7 @@ const SupplierById = () => {
     );
 
     setDailyCountSummeryBySupplierId(summary);
-  }, [id, filters, dailyLeafCount]);
+  }, [filters, id, dailyLeafCount]);
 
   const columns = [
     { title: "Date", dataIndex: "date", key: "date" },
@@ -114,11 +114,11 @@ const SupplierById = () => {
 
   const supplierInfo = selectedSuplier
     ? [{
-        supplier_id: selectedSuplier.supplierId,
-        supplier_name: selectedSuplier.name,
-        line: selectedSuplier.line,
-        contact_number: selectedSuplier.contact,
-      }]
+      supplier_id: selectedSuplier.supplierId,
+      supplier_name: selectedSuplier.name,
+      line: selectedSuplier.line,
+      contact_number: selectedSuplier.contact,
+    }]
     : [];
 
   return (
@@ -126,74 +126,164 @@ const SupplierById = () => {
       {contextHolder}
 
       {/* Year & Month Filters */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+      <Row gutter={[16, 16]} style={{ marginBottom: 5 }}>
         <Col xs={24} md={12}>
+<Col xs={24} md={12}>
+
+
+</Col>
+
+
           <Card bordered={false} style={cardStyle}>
-            <Text strong>From</Text>
-            <Select
-              value={filters.fromYear}
-              onChange={(val) => setFilters(prev => ({ ...prev, fromYear: val }))}
-              style={{ width: "100%", marginBottom: 12 }}
-            >
-              <Option value="2024">2024</Option>
-              <Option value="2025">2025</Option>
-            </Select>
-            <Row gutter={[12, 12]}>
-              {allMonthKeys.map((m) => (
-                <Col xs={8} sm={6} md={4} key={`from-${m}`}>
-                  <Button
-                    disabled={isAfterToDate(filters.fromYear, m)}
-                    type={filters.fromMonth === m ? "primary" : "default"}
-                    onClick={() => setFilters(prev => ({ ...prev, fromMonth: m }))}
-                    style={{ width: "100%" }}
-                  >
-                    {monthMap[m]}
-                  </Button>
-                </Col>
-              ))}
+            <Row gutter={[16, 16]} align="middle" justify="center">
+              <Col xs={24} md={4}>
+                <Text style={{ color: "#eee", fontSize: 18 }}>From</Text>
+              </Col>
+              <Col xs={24} md={9}>
+                <Select
+                  value={filters.fromYear}
+                  onChange={(val) => setFilters(prev => ({ ...prev, fromYear: val }))}
+                 style={{
+                    width: "100%",
+                    backgroundColor: "rgba(0, 0, 0, 0.6)",
+                    color: "#fff",
+                    border: "1px solid #333",
+                    borderRadius: 6,
+                    cursor: "pointer"
+                  }}
+                  dropdownStyle={{
+                    backgroundColor: "rgba(0, 0, 0, 0.9)",
+                    color: "#fff"
+                  }}
+                  bordered={false}
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  <Option value="2024">2024</Option>
+                  <Option value="2025">2025</Option>
+                </Select>
+              </Col>
+              <Col xs={24} md={9}>
+                <Select
+                  value={filters.fromMonth}
+                  onChange={(val) => setFilters(prev => ({ ...prev, fromMonth: val }))}
+                   style={{
+                    width: "100%",
+                    backgroundColor: "rgba(0, 0, 0, 0.6)",
+                    color: "#fff",
+                    border: "1px solid #333",
+                    borderRadius: 6,
+                    cursor: "pointer"
+                  }}
+                  dropdownStyle={{
+                    backgroundColor: "rgba(0, 0, 0, 0.9)",
+                    color: "#fff"
+                  }}
+                  bordered={false}
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  {allMonthKeys.map((m) => (
+                    <Option key={`from-${m}`} value={m}>
+                      {monthMap[m]}
+                    </Option>
+                  ))}
+                </Select>
+              </Col>
             </Row>
           </Card>
+
+
+
+
+
+
+          <Col xs={24} md={12}>
+
+
+</Col>
         </Col>
 
         <Col xs={24} md={12}>
           <Card bordered={false} style={cardStyle}>
-            <Text strong>To</Text>
-            <Select
-              value={filters.toYear}
-              onChange={(val) => setFilters(prev => ({ ...prev, toYear: val }))}
-              style={{ width: "100%", marginBottom: 12 }}
-            >
-              <Option value="2024">2024</Option>
-              <Option value="2025">2025</Option>
-            </Select>
-            <Row gutter={[12, 12]}>
-              {allMonthKeys.map((m) => (
-                <Col xs={8} sm={6} md={4} key={`to-${m}`}>
-                  <Button
-                    disabled={isBeforeFromDate(filters.toYear, m)}
-                    type={filters.toMonth === m ? "primary" : "default"}
-                    onClick={() => setFilters(prev => ({ ...prev, toMonth: m }))}
-                    style={{ width: "100%" }}
-                  >
-                    {monthMap[m]}
-                  </Button>
-                </Col>
-              ))}
+            <Row gutter={[16, 16]} align="middle" justify="center">
+              <Col xs={24} md={4}>
+                <Text style={{ color: "#eee", fontSize: 18 }}>To</Text>
+              </Col>
+              <Col xs={24} md={9}>
+                <Select
+                  value={filters.toYear}
+                  onChange={(val) => setFilters(prev => ({ ...prev, toYear: val }))}
+                style={{
+                    width: "100%",
+                    backgroundColor: "rgba(0, 0, 0, 0.6)",
+                    color: "#fff",
+                    border: "1px solid #333",
+                    borderRadius: 6,
+                    cursor: "pointer"
+                  }}
+                  dropdownStyle={{
+                    backgroundColor: "rgba(0, 0, 0, 0.9)",
+                    color: "#fff"
+                  }}
+                  bordered={false}
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  <Option value="2024">2024</Option>
+                  <Option value="2025">2025</Option>
+                </Select>
+              </Col>
+              <Col xs={24} md={9}>
+                <Select
+                  value={filters.toMonth}
+                  onChange={(val) => setFilters(prev => ({ ...prev, toMonth: val }))}
+                   style={{
+                    width: "100%",
+                    backgroundColor: "rgba(0, 0, 0, 0.6)",
+                    color: "#fff",
+                    border: "1px solid #333",
+                    borderRadius: 6,
+                    cursor: "pointer"
+                  }}
+                  dropdownStyle={{
+                    backgroundColor: "rgba(0, 0, 0, 0.9)",
+                    color: "#fff"
+                  }}
+                  bordered={false}
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  {allMonthKeys.map((m) => (
+                    <Option key={`to-${m}`} value={m}>
+                      {monthMap[m]}
+                    </Option>
+                  ))}
+                </Select>
+              </Col>
             </Row>
           </Card>
         </Col>
       </Row>
 
       {/* Date Range Summary */}
-      <Card bordered={false} style={{ ...cardStyle, padding: 16 }}>
+      <Card bordered={false} style={cardStyle}>
         <Text style={{ color: dateRange.isValid ? "#00ffcc" : "#ff4d4f", fontSize: 16 }}>
-          Date Range: <b>{dateRange.fromDate}</b> to <b>{dateRange.toDate}</b>
+          {dailyLeafCount.length} records — Date Range: <b>{dateRange.fromDate}</b> to <b>{dateRange.toDate}</b>
         </Text>
       </Card>
 
       {/* Leaf Totals Summary */}
       {dailyCountSummeryBySupplierId.filteredData?.length > 0 && (
-        <Card bordered={false} style={{ ...cardStyle, padding: 16 }}>
+        <Card bordered={false} style={{ ...cardStyle, background: "#1b2a3a" }}>
           <Text style={{ color: "#fff", fontSize: 16 }}>
             🟢 Normal Leaf Total (Net Kg): <b>{dailyCountSummeryBySupplierId.normalLeafTotalNetKg}</b><br />
             🔵 Super Leaf Total (Net Kg): <b>{dailyCountSummeryBySupplierId.superLeafTotalNetKg}</b>
@@ -202,17 +292,18 @@ const SupplierById = () => {
       )}
 
       {/* Leaf Collection Table */}
-      <Card style={{ marginBottom: 16 }}>
+      <Card style={{ ...cardStyle, background: "#fff" }}>
         <Table
           columns={columns}
           dataSource={dailyCountSummeryBySupplierId.filteredData || []}
           pagination={false}
           rowKey="date"
+          bordered
         />
       </Card>
 
       {/* Supplier Info Table */}
-      <Card>
+      <Card style={{ ...cardStyle, background: "#fff" }}>
         <Table
           columns={[
             { title: "Supplier ID", dataIndex: "supplier_id", key: "supplier_id" },
@@ -223,6 +314,7 @@ const SupplierById = () => {
           dataSource={supplierInfo}
           pagination={false}
           rowKey="supplier_id"
+          bordered
         />
       </Card>
     </div>

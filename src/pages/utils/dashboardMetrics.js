@@ -45,7 +45,7 @@ export function getMonthlyAchievementsForSupplier(data, supplierId) {
     total: parseFloat(total.toFixed(2)),
     data
   }));
-console.log(result); // 👈 Debugging line to check the output
+  console.log(result); // 👈 Debugging line to check the output
 
   return result;
 }
@@ -54,16 +54,16 @@ export function getSupplierSummaryByDateRange(data, supplierId, startDate, endDa
 
   const start = new Date(startDate);
   const end = new Date(endDate);
-console.log(startDate, endDate); // 👈 Debugging line to check the output
-console.log(data); // 👈 Debugging line to check the output
+  console.log(startDate, endDate); // 👈 Debugging line to check the output
+  console.log(data); // 👈 Debugging line to check the output
   console.log(supplierId); // 👈 Debugging line to check the output
-  
+
 
 
   const filtered = data.filter(entry => {
     return (
       entry.supplier_id === supplierId &&
-      new Date(entry.date) >= start &&      new Date(entry.date) <= end
+      new Date(entry.date) >= start && new Date(entry.date) <= end
     );
   });
 
@@ -83,10 +83,12 @@ console.log(data); // 👈 Debugging line to check the output
   });
 
 
-  const res = { filteredData: filtered,
+  const res = {
+    filteredData: filtered,
     superLeafTotalNetKg: parseFloat(superTotal.toFixed(2)),
-    normalLeafTotalNetKg: parseFloat(normalTotal.toFixed(2))}
-    
+    normalLeafTotalNetKg: parseFloat(normalTotal.toFixed(2))
+  }
+
   return res;
 }
 
