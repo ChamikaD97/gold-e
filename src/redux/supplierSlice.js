@@ -9,7 +9,7 @@ export const fetchSuppliers = createAsyncThunk(
     "supplier/fetchSuppliers",
     async (supplierId = "", { rejectWithValue }) => {
         try {
-            const formattedUrl = `http://newserver:46597/quiX/DataStruts/GetJSONData?req=2$5$3$#F001@000000$F002@009999$F003@${supplierId}`;
+      const formattedUrl = `http://newserver:46597/quiX/DataStruts/GetJSONData?req=5$#F001@000001$F002@9999999$F003@${supplierId}`;
             const response = await axios.get(formattedUrl);
             return response.data;
         } catch (error) {
