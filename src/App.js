@@ -33,8 +33,8 @@ const App = () => {
           <Route path="/factory-targets" element={<FactoryTargetAchievemenets />} />
           <Route path="/employees" element={<EmployeeManagementPage />} />
           <Route path="/leaf-count" element={<LeafCountChart />} />
-<Route path="/meal" element={<MealManagement />} />
-        <Route path="/supplier/:id" element={<SupplierById />} />
+          <Route path="/meal" element={<MealManagement />} />
+          <Route path="/supplier/:id" element={<SupplierById />} />
 
           <Route path="/404" element={<div>404 - Page Not Found</div>} />
           <Route path="*" element={<Navigate to="/404" replace />} />
