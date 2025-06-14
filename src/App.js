@@ -10,6 +10,8 @@ import LeafCountChart from "./pages/LeafCountChart";
 import RegisterPage from "./pages/RegistrationForm";
 import SupplierById from "./pages/SupplierById";
 import MealManagement from "./pages/MealManagement";
+import Suppliers from "./pages/Suppliers"; // Assuming this is the correct import for the Suppliers page
+
 const LayoutWithHeader = () => (
   <>
     <HeaderComponent />
@@ -35,6 +37,9 @@ const App = () => {
           <Route path="/leaf-count" element={<LeafCountChart />} />
           <Route path="/meal" element={<MealManagement />} />
           <Route path="/supplier/:id" element={<SupplierById />} />
+          <Route path="/suppliers" element={<Suppliers />} />
+
+          {/* 404 Route */}
 
           <Route path="/404" element={<div>404 - Page Not Found</div>} />
           <Route path="*" element={<Navigate to="/404" replace />} />

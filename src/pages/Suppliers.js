@@ -1,512 +1,422 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  Table,
-  Modal,
-  Input,
-  Form,
-  Button,
-  Card,
-  Select,
-  notification,
+  Card, Col, Row, Select, Typography, Button, Progress, Table
 } from "antd";
-import CustomButton from "../components/CustomButton";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { useSelector, useDispatch } from "react-redux";
-import { setSearch, setOfficers ,setOfficerLines } from "../redux/officerSlice";
-import { isLoading, setSelectedKey } from "../redux/authSlice";
-import ReactCountryFlag from "react-country-flag";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
+import { ReloadOutlined } from "@ant-design/icons";
+import { Bar, Line, Pie } from "react-chartjs-2";
 import {
-  ReloadOutlined,
-  DownloadOutlined,
-  PlusCircleOutlined,
-  MoreOutlined,
-} from "@ant-design/icons"; // Import the icon
-import { CleanHands, CleanHandsOutlined, TrainOutlined } from "@mui/icons-material";
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Tooltip,
+  Legend,
+  ArcElement
+} from "chart.js";
+import CountUp from "react-countup";
+import achievementsData from "./data/achievements.json";
+import { useSelector } from "react-redux";
+
+
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Tooltip,
+  Legend
+);
+
 const { Option } = Select;
-const { TextArea } = Input;
+const { Title, Text } = Typography;
+
+
+
+
 
 const Suppliers = () => {
-  const { officerData, search } = useSelector((state) => state.eng);
-  const { loading, token } = useSelector((state) => state.auth);
-  const dispatch = useDispatch();
-  const [api, contextHolder] = notification.useNotification();
-  const openNotificationWithIcon = (type, title) => {
-    api[type]({
-      message: title,
+  const [data, setData] = useState([]);
+
+  const [filters, setFilters] = useState({ year: "2024", month: "All", officer: "All", line: "All" });
+  const [suppliersMarkedTomorrow, setSuppliersMarkedTomorrow] = useState([]);
+  useEffect(() => {
+    setData(achievementsData);
+  }, []);
+
+  const filteredData = useMemo(() => {
+    let result = data.filter(d => d.month.startsWith(filters.year));
+    if (filters.month !== "All") result = result.filter(d => d.month === `${filters.year}-${filters.month}`);
+    if (filters.officer !== "All") result = result.filter(d => d.field_officer === filters.officer);
+    if (filters.line !== "All") result = result.filter(d => d.line_id === filters.line);
+    return result;
+  }, [data, filters]);
+  const allLines = useSelector(state => state.officerLine.allLines || []);
+
+  const totalTarget = useMemo(() => filteredData.reduce((sum, d) => sum + d.target, 0), [filteredData]);
+  const totalAchieved = useMemo(() => filteredData.reduce((sum, d) => sum + d.achieved, 0), [filteredData]);
+
+  const monthlyChartData = useMemo(() => {
+    const summary = {};
+    filteredData.forEach(({ month, target, achieved }) => {
+      if (!summary[month]) summary[month] = { target: 0, achieved: 0 };
+      summary[month].target += target;
+      summary[month].achieved += achieved;
     });
-  };
-  const [selectedRow, setSelectedRow] = useState(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [filteredData, setFilteredData] = useState(officerData);
-  const navigate = useNavigate();
-  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
-  const [form] = Form.useForm();
+    return Object.entries(summary).map(([month, values]) => ({
+      month,
+      ...values
+    }));
+  }, [filteredData]);
+  const officerLineMap = useSelector((state) => state.officerLine.officerLineMap);
 
-  const handleAddNew = () => {
-    setIsAddModalVisible(true);
-  };
+  const monthMap = useSelector((state) => state.commonData?.monthMap);
 
-  const closeAddModal = () => {
-    setIsAddModalVisible(false);
-    form.resetFields();
-  };
-  const API_URL = "http://13.61.26.58:5000";
-  const handleSubmit = async (values) => {
-    try {
-      dispatch(isLoading(true));
-      // Send the data to the API
-      await axios.post(`${API_URL}/api/engines`, values, {
-        headers: { Authorization: "token" },
+
+  const dailyChartData = useMemo(() => {
+    const summary = {};
+    filteredData.forEach(({ month, target, achieved }) => {
+      const day = month.split("-")[2]; // extract DD from YYYY-MM-DD
+      if (!summary[day]) summary[day] = { target: 0, achieved: 0 };
+      summary[day].target += target;
+      summary[day].achieved += achieved;
+    });
+    return Object.entries(summary).map(([day, values]) => ({
+      day,
+      ...values
+    }));
+  }, [filteredData]);
+
+  const lineChartDatas = useMemo(() => ({
+    labels: monthlyChartData.map(d => monthMap[d.month.slice(5)]),
+    datasets: [
+      {
+        label: "Target",
+        data: monthlyChartData.map(d => d.target),
+        fill: false,
+        borderColor: "#8884d8",
+        tension: 0.3
+      },
+      {
+        label: "Achieved",
+        data: monthlyChartData.map(d => d.achieved),
+        fill: false,
+        borderColor: "#52c41a",
+        tension: 0.3
+      },
+      {
+        label: "Achievement %",
+        data: monthlyChartData.map(d =>
+          d.target ? ((d.achieved / d.target) * 100).toFixed(2) : 0
+        ),
+        fill: false,
+        borderColor: "#faad14",
+        tension: 0.3,
+        yAxisID: 'percentage' // <- will need a separate Y axis
+      }
+    ]
+  }), [monthlyChartData]);
+
+
+
+
+
+
+  const lineChartData = useMemo(() => {
+    if (filters.month !== "All") {
+      // Show days of the selected month
+      const daysInMonth = new Date(+filters.year, +filters.month, 0).getDate(); // e.g. 30
+      const dayLabels = Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString());
+
+      const dayDataMap = {};
+      filteredData.forEach(d => {
+        const day = d.month.split("-")[2]; // expecting YYYY-MM-DD
+        if (day) {
+          const dayNum = parseInt(day, 10);
+          if (!dayDataMap[dayNum]) {
+            dayDataMap[dayNum] = { target: 0, achieved: 0 };
+          }
+          dayDataMap[dayNum].target += d.target;
+          dayDataMap[dayNum].achieved += d.achieved;
+        }
       });
 
-      openNotificationWithIcon("success", "Engine Added Successfully");
+      return {
+        labels: dayLabels,
 
-      notification.success({
-        message: "Engine Added",
-        description: "The new engine data has been successfully added!",
-      });
-      dispatch(isLoading(false));
-      closeAddModal(); // Close modal after success
-    } catch (error) {
-      dispatch(isLoading(false));
-      openNotificationWithIcon("error", "Failed to Add Engine");
-      console.error("Error adding engine:", error.message);
+        datasets: [
+          {
+            label: "Target",
+            data: dailyChartData.map(d => d.target),
+            fill: false,
+            borderColor: "#adasdsad",
+            tension: 0.3
+          },
+          {
+            label: "Achieved",
+            data: dailyChartData.map(d => d.achieved),
+            fill: false,
+            borderColor: "#52c41a",
+            tension: 0.3
+          },
+          {
+            label: "Achievement %",
+            data: dailyChartData.map(d =>
+              d.target ? ((d.achieved / d.target) * 100).toFixed(2) : 0
+            ),
+            fill: false,
+            borderColor: "#faad14",
+            tension: 0.3,
+            yAxisID: 'percentage' // <- will need a separate Y axis
+          }
+        ]
+      };
+    } else {
+      // Default monthly chart
+      return {
+        labels: monthlyChartData.map(d => monthMap[d.month.slice(5)]),
+        datasets: [
+          {
+            label: "Target",
+            data: monthlyChartData.map(d => d.target),
+            fill: false,
+            borderColor: "#8884d8",
+            tension: 0.3
+          },
+          {
+            label: "Achieved",
+            data: monthlyChartData.map(d => d.achieved),
+            fill: false,
+            borderColor: "#52c41a",
+            tension: 0.3
+          },
+          {
+            label: "Achievement %",
+            data: monthlyChartData.map(d =>
+              d.target ? ((d.achieved / d.target) * 100).toFixed(2) : 0
+            ),
+            fill: false,
+            borderColor: "#faad14",
+            tension: 0.3,
+            yAxisID: 'percentage' // <- will need a separate Y axis
+          }
+        ]
+      };
+    }
+  }, [monthlyChartData, filteredData, filters]);
+
+
+  const lineChartOptions = {
+    maintainAspectRatio: false,
+    responsive: true,
+    plugins: {
+      legend: {
+        labels: { color: "#fff" }
+      },
+      tooltip: {
+        backgroundColor: "#222",
+        titleColor: "#fff",
+        bodyColor: "#fff"
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: "#fff" },
+        grid: { display: false } // ❌ No grid lines on x-axis
+      },
+      y: {
+        display: false,
+
+      },
+
     }
   };
+
+  const officerChartData = useMemo(() => {
+    const summary = {};
+    filteredData.forEach(({ field_officer, target, achieved }) => {
+      if (!summary[field_officer]) summary[field_officer] = { target: 0, achieved: 0 };
+      summary[field_officer].target += target;
+      summary[field_officer].achieved += achieved;
+    });
+    return Object.entries(summary).map(([officer, stats]) => ({
+      officer,
+      ...stats,
+      percent: stats.target ? ((stats.achieved / stats.target) * 100).toFixed(2) : 0
+    }));
+  }, [filteredData]);
+
+  const barData = {
+    labels: officerChartData.map(d => d.officer),
+    datasets: [{
+      label: "Achievement %",
+      data: officerChartData.map(d => d.percent),
+      backgroundColor: "#1890ff"
+    }]
+  };
+
+  const pieData = {
+    labels: officerChartData.map(d => d.officer),
+    datasets: [{
+      label: "Achievement Share",
+      data: officerChartData.map(d => d.achieved),
+      backgroundColor: ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#A020F0"]
+    }]
+  };
+
   const columns = [
+    { title: "Month", dataIndex: "month", key: "month" },
+    { title: "Line", dataIndex: "line_id", key: "line_id" },
+    { title: "Officer", dataIndex: "field_officer", key: "field_officer" },
+    { title: "Target", dataIndex: "target", key: "target" },
+    { title: "Achieved", dataIndex: "achieved", key: "achieved" },
     {
-      title: "Supplier",
-      dataIndex: "supplier",
-      key: "supplier",
-    },
-    {
-      title: "Supplier Number",
-      dataIndex: "supplierNumber",
-      key: "supplierNumber",
-    },
-    {
-      title: "Age of tea factory",
-      dataIndex: "age_of_factory",
-      key: "age_of_factory",
-    },
-
-    {
-      title: "Cultivated Area",
-      dataIndex: "cultivated_area",
-      key: "cultivated_area",
-    },
-    {
-      title: "Monthly Harvest",
-      dataIndex: "monthly_harvest",
-      key: "monthly_harvest",
-    },
-    {
-      title: "Contact",
-      dataIndex: "tel",
-      key: "tel",
-    },
-    {
-      title: "Route",
-      dataIndex: "route",
-      key: "route",
-    },
-
+      title: "Achieved %",
+      key: "percent",
+      render: (record) => `${((record.achieved / record.target) * 100).toFixed(2)}%`
+    }
   ];
 
-  const handleRowClick = (record) => {
-    setSelectedRow(record);
-    setIsModalVisible(true);
-  };
+  const uniqueOfficers = ["All", ...Object.keys(officerLineMap)];
+  const filteredLines = filters.officer === "All"
+    ? ["All", ...new Set(data.map(d => d.line_id))]
+    : ["All", ...(officerLineMap[filters.officer] || [])];
+  const uniqueMonths = ["All", ...new Set(data.filter(d => d.month.startsWith(filters.year)).map(d => d.month.slice(5)))];
 
-  const closeModal = () => {
-    setIsModalVisible(false);
-    setSelectedRow(null);
-  };
+  const cardStyle = { background: "rgba(0, 0, 0, 0.6)", color: "rgba(206, 3, 3, 0.6)", borderRadius: 12, marginBottom: 6 };
 
-  const exportToPDF = (data, columns, fileName) => {
-    const doc = new jsPDF();
+  const filterText = `Displaying data for ${filters.month !== "All" ? monthMap[filters.month] : "all months"} ${filters.year}, ` +
+    `${filters.officer !== "All" ? `Officer: ${filters.officer}, ` : ""}` +
+    `${filters.line !== "All" ? `Line: ${filters.line}` : ""}`.trim();
 
-    doc.autoTable({
-      head: [columns],
-      body: data.map((item) => columns.map((col) => item[col.key])),
-    });
-    doc.save(`${fileName}.pdf`);
-  };
-  const handleSearch = (event) => {
-    const value = event.target.value.toLowerCase();
-    if (!value) {
-      return;
-    }
-    const filtered = officerData.filter((item) =>
-      Object.values(item).join(" ").toLowerCase().includes(value)
-    );
-    setFilteredData(filtered);
-  };
-
-  const fetchSuppliers = async () => {
-    dispatch(setSearch());
-    try {
-      // const token = await AsyncStorage.getItem("token");
-      // if (!token) return     navigate('/dashboard');
-      dispatch(isLoading(true));
-      const engineRes = await axios.get(`${API_URL}/api/engines`, {
-        headers: { Authorization: "token" },
-      });
-
-      //dispatch(engines(engineRes.data));
-      setFilteredData(officerData);
-
-      setTimeout(() => {
-        dispatch(isLoading(false));
-      }, 500);
-    } catch (error) {
-      console.error("Error fetching engines:", error.message);
-    }
-  };
-
-  const handelMore = () => {
-    navigate(`/engine/${selectedRow.subClass}`);
-  };
-  useEffect(() => {
-    if (!search) {
-      setFilteredData(officerData);
-      return;
-    }
-
-    const filtered = officerData.filter((item) =>
-      item.class?.toLowerCase().includes(search.toLowerCase())
-    );
-
-    setFilteredData(filtered);
-  }, []);
   return (
-    <div>
-      <Card>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "25px",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            {contextHolder}
 
-            <CustomButton
-              text="Refresh"
-              onClick={fetchSuppliers}
-              icon={<ReloadOutlined />}
-              type="rgba(145, 0, 0, 0.64)"
-            />
 
-          </div>
 
-          <h2 style={{ margin: 0 }} onClick={() => setFilteredData(officerData)}>
-            Suppliers
-          </h2>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Input
-              placeholder="Search"
-              onClear={() => setFilteredData(officerData)}
-              onChange={handleSearch}
-              allowClear={true}
-              style={{
-                width: "200px",
-                height: "40px",
-                borderRadius: "15px",
-                marginRight: "10px",
-              }}
-            />
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
 
-            <CustomButton
-              text="Downlaod"
-              icon={<DownloadOutlined />}
-              onClick={() => exportToPDF(filteredData, columns, "TableData")}
-              type="rgba(0, 15, 145, 0.79)"
-            />
-            <CustomButton
-              text="Add New"
-              icon={<PlusCircleOutlined />}
-              onClick={() => handleAddNew()}
-              type="rgba(21, 155, 0, 0.79)"
-            />
-          </div>
+      <div style={{ flex: "0 0 auto", marginBottom: 16 }} className="fade-in">
+
+        <div key={`filters-${filters.year}-${filters.officer}`}>
+          <Card bordered={false} style={{ ...cardStyle }}>
+            <Row gutter={[16, 16]}>
+              <Col md={1}>
+                <Button
+                  icon={<ReloadOutlined />}
+                  danger
+                  type="primary"
+                  block
+                  onClick={() => setFilters({ year: "2025", month: "All", officer: "All", line: "All" })}
+                >
+
+                </Button>
+              </Col>
+
+
+
+
+
+
+
+              {uniqueOfficers.filter(o => o !== "All").map(o => (
+                <Col xs={8} sm={4} md={3} key={o}>
+                  <Button
+                    type={filters.officer === o ? "primary" : "default"}
+                    onClick={() =>
+                      setFilters(prev => ({
+                        ...prev,
+                        officer: o,
+                        line: o === "Malinduwa" ? "M" : "All",
+                        month: "All"
+                      }))
+                    }
+                    style={{
+                      width: "100%",
+                      background: filters.officer === o ? "#1890ff" : "#000",
+                      color: "#fff",
+                      borderColor: "#333"
+                    }}
+                  >
+                    {o}
+                  </Button>
+                </Col>
+              ))}
+
+
+
+            </Row>
+          </Card>
         </div>
-        <div
-          style={{
-            maxHeight: "calc(100vh - 200px)", // Adjust height to fit window
-            overflowY: "auto", // Enable vertical scrolling for the table only
-            borderRadius: "15px",
-            backgroundColor: "#ffffff",
-            boxShadow: "0px 4px 10px rgba(0,0,0,0.1)",
-            padding: "10px",
-          }}
-        >
-          <Table
-            columns={columns}
-            dataSource={filteredData}
-            onRow={(record) => ({
-              onClick: () => handleRowClick(record),
-            })}
-            pagination={true} // Disable pagination to show full data with scrolling
-            scroll={{ x: true }}
-            bordered
-            loading={loading}
-          />
-        </div>
-      </Card>
-      <Modal
-        visible={isModalVisible}
-        onCancel={closeModal}
-        footer={null}
-        centered
-        bodyStyle={{ padding: "20px", fontSize: "16px" }}
-      >
-        {selectedRow && (
-          <div>
-            <p>
-              <strong>Class:</strong> {selectedRow.class || "N/A"}
-            </p>
-            <p>
-              <strong>Sub Class:</strong> {selectedRow.subClass || "N/A"}
-            </p>
-            <p>
-              <strong>Power (Hp):</strong> {selectedRow["power(Hp)"] || "N/A"}
-            </p>
-            <p>
-              <strong>Axle Structure:</strong>{" "}
-              {selectedRow.axleStructure || "N/A"}
-            </p>
-            <p>
-              <strong>Power Engine:</strong> {selectedRow.powerEngine || "N/A"}
-            </p>
-            <p>
-              <strong>Year:</strong> {selectedRow.year || "N/A"}
-            </p>
 
-            <p>
-              <strong>Axle Load(Weight/axcels):</strong>{" "}
-              {selectedRow.powerEngine || "N/A"}
-            </p>
-            <p>
-              <strong>Year:</strong> {selectedRow.year || "N/A"}
-            </p>
-            <p>
-              <div></div>
-              <strong>Country: </strong>
-              <ReactCountryFlag
-                svg
-                style={{
-                  width: "8em",
-                  height: "5em",
-                }}
-                countryCode={selectedRow.country}
-              />
-            </p>
-            <p>
-              <strong>Company:</strong> {selectedRow.company || "N/A"}
-            </p>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                alignItems: "center",
-              }}
-            >
-              <CustomButton
-                text="More"
-                icon={<MoreOutlined />}
-                onClick={() => handelMore()}
-                type="rgba(155, 119, 0, 0.79)"
-              />
-            </div>
+
+        {filters.line !== "M" && filters.officer !== "All" && (
+          <div key={`line-${filters.officer}`}>
+            <Card bordered={false} className="fade-in" style={cardStyle}>
+              <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+                {filteredLines.filter(l => l !== "All").map(line => (
+                  <Col xs={8} sm={4} md={4} key={line}>
+                    <Button
+                      type={filters.line === line ? "primary" : "default"}
+                      onClick={() => setFilters(prev => ({ ...prev, line, month: "All" }))}
+                      style={{ width: "100%", background: filters.line === line ? "#1890ff" : "#000", color: "#fff", borderColor: "#333" }}
+                    >
+                      {line}
+                    </Button>
+                  </Col>
+                ))}
+              </Row>
+            </Card>
           </div>
         )}
-      </Modal>
-      <Modal
-        title="Add New Engine"
-        visible={isAddModalVisible}
-        onCancel={closeAddModal}
-        footer={null}
-        centered
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          onReset={closeAddModal}
-          initialValues={{ country: "US" }} // Default values if needed
-        >
-          <Form.Item
-            label="Class"
-            name="class"
-            rules={[{ required: true, message: "Please enter the class!" }]}
-          >
-            <Input placeholder="Enter class" />
-          </Form.Item>
 
-          <Form.Item
-            label="Sub Class"
-            name="subClass"
-            rules={[{ required: true, message: "Please enter the sub-class!" }]}
-          >
-            <Input placeholder="Enter sub-class" />
-          </Form.Item>
 
-          <Form.Item
-            label="Power (Hp)"
-            name="powerHp"
-            rules={[{ required: false, message: "Please enter power (Hp)!" }]}
-          >
-            <Input placeholder="Enter power (Hp)" />
-          </Form.Item>
 
-          <Form.Item
-            label="Axle Structure"
-            name="axleStructure"
-            rules={[
-              { required: false, message: "Please enter axle structure!" },
-            ]}
-          >
-            <Input placeholder="Enter axle structure" />
-          </Form.Item>
 
-          <Form.Item
-            label="Power Engine"
-            name="powerEngine"
-            rules={[{ required: false, message: "Please enter power engine!" }]}
-          >
-            <Input placeholder="Enter power engine" />
-          </Form.Item>
 
-          <Form.Item
-            label="Year"
-            name="year"
-            rules={[
-              {
-                required: false,
-                message: "Please enter the manufacturing year!",
-              },
-            ]}
-          >
-            <Input type="number" placeholder="Enter year" />
-          </Form.Item>
 
-          <Form.Item
-            label="Country"
-            name="country"
-            rules={[{ required: false, message: "Please enter the country!" }]}
-          >
-            <Input placeholder="Enter country" />
-          </Form.Item>
 
-          <Form.Item
-            label="Company"
-            name="company"
-            rules={[
-              { required: false, message: "Please enter the company name!" },
-            ]}
-          >
-            <Input placeholder="Enter company" />
-          </Form.Item>
-          <Form.Item
-            label="Condition"
-            name="condition"
-            rules={[
-              { required: true, message: "Please select the condition!" },
-            ]}
-          >
-            <Select placeholder="Select condition">
-              <Option value="working">Working</Option>
-              <Option value="not-working">Not Working</Option>
-            </Select>
-          </Form.Item>
-          <Form.Item
-            label="Shed"
-            name="shed"
-            rules={[{ required: true, message: "Please enter the shed!" }]}
-          >
-            <Input placeholder="Enter Shed" />
-          </Form.Item>
-          <Form.Item
-            label="Specifications"
-            name="specifications"
-            rules={[
-              { required: false, message: "Please input specifications!" },
-            ]}
-          >
-            <TextArea placeholder="Enter detailed specifications" rows={4} />
-          </Form.Item>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              alignItems: "center",
-            }}
-          >
-            <Form.Item>
-              <button
-                type="submit"
-                style={{
-                  padding: "12px 20px",
-                  backgroundColor: "rgba(21, 155, 0, 0.79)",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "12px",
-                  marginRight: "10px",
 
-                  cursor: "pointer",
-                  borderRadius: "12px",
-                  color: "#fff",
-                  border: "none",
-                  outline: "none",
-                }}
-              >
-                Submit
-              </button>
-            </Form.Item>{" "}
-            <Form.Item>
-              <button
-                type="reset"
-                style={{
-                  padding: "12px 20px",
-                  backgroundColor: "rgba(155, 0, 0, 0.79)",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "12px",
-                  marginRight: "10px",
 
-                  cursor: "pointer",
-                  borderRadius: "12px",
-                  color: "#fff",
-                  border: "none",
-                  outline: "none",
-                }}
-              >
-                Reset
-              </button>
-            </Form.Item>
-          </div>
-        </Form>
-      </Modal>
+        <style>
+          {`
+              .custom-placeholder::placeholder,
+              .custom-placeholder input::placeholder,
+              .ant-picker-input input::placeholder {
+                color: #444 !important;
+                opacity: 0.8 !important;
+              }
+
+              .ant-picker-input input {
+                color: #111 !important;
+              }
+
+              @keyframes fadeIn {
+                from {
+                  opacity: 0;
+                  transform: translateY(10px);
+                }
+                to {
+                  opacity: 1;
+                  transform: translateY(0);
+                }
+              }
+
+              .fade-in {
+                animation: fadeIn 0.6s ease-in-out;
+              }
+            `}
+        </style>
+
+      </div>
+
+
     </div>
-  );
+
+  )
 };
 
 export default Suppliers;
