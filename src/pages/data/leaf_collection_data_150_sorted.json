@@ -1332,7 +1332,7 @@
   },
   {
     "supplier_id": "SUP013",
-    "date": "2025-05-15",
+    "date": "2025-05-19",
     "leaf_type": "Super",
     "full_kg": 132.5,
     "gross": 139.8,
@@ -1342,7 +1342,7 @@
   },
   {
     "supplier_id": "SUP032",
-    "date": "2025-05-15",
+    "date": "2025-05-19",
     "leaf_type": "Normal",
     "full_kg": 134.1,
     "gross": 140.2,
@@ -1352,7 +1352,7 @@
   },
   {
     "supplier_id": "SUP041",
-    "date": "2025-05-15",
+    "date": "2025-05-19",
     "leaf_type": "Super",
     "full_kg": 116.8,
     "gross": 121.2,
@@ -1362,7 +1362,7 @@
   },
   {
     "supplier_id": "SUP046",
-    "date": "2025-05-15",
+    "date": "2025-05-18",
     "leaf_type": "Super",
     "full_kg": 147.5,
     "gross": 155.3,
@@ -1372,7 +1372,7 @@
   },
   {
     "supplier_id": "SUP057",
-    "date": "2025-05-15",
+    "date": "2025-05-18",
     "leaf_type": "Normal",
     "full_kg": 140.1,
     "gross": 145.6,
@@ -1382,7 +1382,7 @@
   },
   {
     "supplier_id": "SUP060",
-    "date": "2025-05-15",
+    "date": "2025-05-18",
     "leaf_type": "Normal",
     "full_kg": 94.4,
     "gross": 99.5,
@@ -1392,7 +1392,7 @@
   },
   {
     "supplier_id": "SUP070",
-    "date": "2025-05-15",
+    "date": "2025-05-18",
     "leaf_type": "Normal",
     "full_kg": 101.7,
     "gross": 109.3,
@@ -1402,7 +1402,7 @@
   },
   {
     "supplier_id": "SUP084",
-    "date": "2025-05-15",
+    "date": "2025-05-18",
     "leaf_type": "Super",
     "full_kg": 110.6,
     "gross": 118.0,
@@ -1412,7 +1412,7 @@
   },
   {
     "supplier_id": "SUP088",
-    "date": "2025-05-15",
+    "date": "2025-05-19",
     "leaf_type": "Normal",
     "full_kg": 93.4,
     "gross": 97.7,
@@ -1422,7 +1422,7 @@
   },
   {
     "supplier_id": "SUP101",
-    "date": "2025-05-15",
+    "date": "2025-05-19",
     "leaf_type": "Normal",
     "full_kg": 84.2,
     "gross": 92.0,
@@ -1432,7 +1432,7 @@
   },
   {
     "supplier_id": "SUP102",
-    "date": "2025-05-15",
+    "date": "2025-05-19",
     "leaf_type": "Normal",
     "full_kg": 88.5,
     "gross": 91.2,
@@ -1442,7 +1442,7 @@
   },
   {
     "supplier_id": "SUP107",
-    "date": "2025-05-15",
+    "date": "2025-05-19",
     "leaf_type": "Normal",
     "full_kg": 102.5,
     "gross": 107.4,
@@ -1452,7 +1452,7 @@
   },
   {
     "supplier_id": "SUP112",
-    "date": "2025-05-15",
+    "date": "2025-05-19",
     "leaf_type": "Normal",
     "full_kg": 141.8,
     "gross": 144.4,
@@ -1462,7 +1462,7 @@
   },
   {
     "supplier_id": "SUP119",
-    "date": "2025-05-15",
+    "date": "2025-05-19",
     "leaf_type": "Normal",
     "full_kg": 115.6,
     "gross": 119.0,
@@ -1472,7 +1472,7 @@
   },
   {
     "supplier_id": "SUP121",
-    "date": "2025-05-15",
+    "date": "2025-05-19",
     "leaf_type": "Super",
     "full_kg": 112.9,
     "gross": 119.9,
@@ -1482,7 +1482,7 @@
   },
   {
     "supplier_id": "SUP129",
-    "date": "2025-05-15",
+    "date": "2025-05-19",
     "leaf_type": "Normal",
     "full_kg": 149.6,
     "gross": 152.9,
@@ -1492,7 +1492,7 @@
   },
   {
     "supplier_id": "SUP136",
-    "date": "2025-05-15",
+    "date": "2025-05-19",
     "leaf_type": "Normal",
     "full_kg": 126.0,
     "gross": 132.1,
