@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Card, Tag, Row, Col, Spin, notification, Modal } from "antd";
+import { Card, Tag, Row, Col, Spin, notification, Modal, Progress } from "antd";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import dayjs from "dayjs";
 import CustomButton from "../components/CustomButton";
+import OfficerProfileModal from "../components/OfficerProfileModal";
 import {
   LeftCircleOutlined,
   DeleteFilled,
@@ -23,6 +24,9 @@ import {
 import { b, bb, gl, p } from "../var";
 import { selectClasses } from "@mui/material";
 import MonthRangeSelector from "../components/MonthButton";
+import LastYearModel from "../components/LastYearModel";
+import MonthlyProgressModal from "../components/MonthlyProgressModal";
+import PerformanceModal from "../components/PerformanceModal";
 const FieldOfficerReports = () => {
   const { Ids } = useParams();
 
@@ -35,8 +39,14 @@ const FieldOfficerReports = () => {
 
   const [monthlyTargets, setMonthlyTargets] = useState([]);
   const [achievements, setAchievements] = useState([]);
-  const [isDetailsModelVisible, setIsDetailsModelVisible] = useState(false);
   const [isShorMoreModel, setShorMoreModelVisible] = useState(false);
+  const [isLastYearModalVisible, setIsLastYearModalVisible] = useState(false);
+
+  const [isMonthlyProgressVisible, setIsMonthlyProgressVisible] =
+    useState(false);
+  const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
+
+  const [isDetailsModelVisible, setIsDetailsModelVisible] = useState(false);
 
   const [filteredmonthlyTargets, setFilteredMonthlyTargets] = useState([]);
   const [filteredachievements, setFilteredAchievements] = useState([]);
@@ -50,6 +60,10 @@ const FieldOfficerReports = () => {
   });
 
   const [targetForSelectedMonth, setTargetForSelectedMonth] = useState([]);
+  const handleRowClick = (officer) => {
+    setSelectedOfficer(officer);
+    setIsProfileModalVisible(true); // open profile first
+  };
 
   const [selectedMonth, setSelectedMonth] = useState([]);
   const [
@@ -67,12 +81,15 @@ const FieldOfficerReports = () => {
   const [monthSelectorKey, setMonthSelectorKey] = useState(0);
 
   const [loading, setLoading] = useState(false);
-  const API_URL = "http://192.168.1.4:8080";
+  
+  const API_URL = "http://192.168.1.77:8080";
   const resetRange = () => {
     setSummaryData([]);
-    setMonthSelectorKey(prev => prev + 1); // This forces remount
+    setMonthSelectorKey((prev) => prev + 1); // This forces remount
   };
-  
+  const [lastYearVisible, setLastYearVisible] = useState(false);
+  const [monthlyVisible, setMonthlyVisible] = useState(false);
+  const [performanceVisible, setPerformanceVisible] = useState(false);
   const handleRangeChange = (range, firstMonth) => {
     console.log("Selected Range start:", range.start);
     console.log("Selected end:", range.end);
@@ -81,35 +98,28 @@ const FieldOfficerReports = () => {
     );
     let startMonth = range.start;
     if (!range.end) {
-      
       let endMonth = range.end;
 
       let x = startMonth;
       startMonth = endMonth;
       endMonth = x;
 
-console.log('same');
+      console.log("same");
 
       const summary = calculateCumulative(filtered, range.start, range.start);
-
-
+      setSummaryData(summary);
       console.log(summary);
-
-    }else{
-      
+    } else {
       const summary = calculateCumulative(filtered, range.start, range.end);
+      setSummaryData(summary);
 
       console.log(summary);
     }
-
-
 
     if (range.start > selectedMonth.id) {
       console.log("Invalid ******** selected");
       return;
     }
-
-   
 
     setShorMoreModelVisible(true);
     closeDataModel();
@@ -150,10 +160,7 @@ console.log('same');
     });
   };
 
-  const handleSearch = (officer) => {
-    setId(officer.id);
-    setSelectedOfficer(officer);
-
+  const dataFetch = (officer) => {
     if (officer == "all") {
       setOfficer();
       return;
@@ -196,6 +203,14 @@ console.log('same');
     setId(officer.id);
   };
 
+  const handleSearch = (officer) => {
+    setId(officer.id);
+    setSelectedOfficer(officer);
+    dataFetch(officer);
+
+    setIsProfileModalVisible(true); // open profile first
+  };
+
   useEffect(() => {
     fetchOfficers();
     fetchMonthlyTargets();
@@ -214,6 +229,11 @@ console.log('same');
     const filtered = achievements.filter(
       (item) => item.officer_id === selectedOfficer.id
     );
+    console.log(monthData);
+
+    if (!monthData.id) {
+      alert("");
+    }
     setSelectedMonth(monthData);
     const achivement = filtered.filter((item) => item.month == monthData.id);
     const officerMonthlyTargets = monthlyTargetsFroSelectedOfficer.filter(
@@ -268,22 +288,100 @@ console.log('same');
 
   const getPercentage = (value, total) => {
     if (!total || total === 0) return 0;
-    return Math.round((value / total) * 100) + "%";
+    return Math.round((value / total) * 100);
   };
+  function countUp(element, end, duration = 1000) {
+    let start = 0;
+    let startTime = null;
+
+    function step(timestamp) {
+      if (!startTime) startTime = timestamp;
+      const progress = timestamp - startTime;
+      const progressRatio = Math.min(progress / duration, 1);
+      const current = Math.floor(progressRatio * end);
+      element.innerText = current;
+      if (progress < duration) {
+        requestAnimationFrame(step);
+      } else {
+        element.innerText = end; // ensure exact end value
+      }
+    }
+
+    requestAnimationFrame(step);
+  }
 
   function filterTargetsByMonthRange(data, startMonth, endMonth) {
+    const monthOrder = [
+      "jan",
+      "feb",
+      "mar",
+      "apr",
+      "may",
+      "jun",
+      "jul",
+      "aug",
+      "sep",
+      "oct",
+      "nov",
+      "dec",
+    ];
+
+    if (!data || data.length === 0) return 0;
+
     const record = data[0]; // Assuming only one object
+    const startIndex = monthOrder.indexOf(startMonth);
+    const endIndex = monthOrder.indexOf(endMonth);
 
-    if (startMonth == endMonth) {
-      const sum = record[startMonth] || 0;
+    if (startIndex === -1 || endIndex === -1) return 0;
 
-      return sum;
-    }
-    const sum = (record[startMonth] || 0) + (record[endMonth] || 0);
+    const [from, to] =
+      startIndex < endIndex ? [startIndex, endIndex] : [endIndex, startIndex];
+
+    const sum = monthOrder
+      .slice(from, to + 1)
+      .reduce((acc, month) => acc + (record[month] || 0), 0);
+
+    console.log("Summed Range:", monthOrder.slice(from, to + 1));
+    console.log("Total Sum:", sum);
 
     return sum;
   }
+  function filterGoldLeftByMonthRange(data, startMonth, endMonth) {
+    const monthOrder = [
+      "jan",
+      "feb",
+      "mar",
+      "apr",
+      "may",
+      "jun",
+      "jul",
+      "aug",
+      "sep",
+      "oct",
+      "nov",
+      "dec",
+    ];
 
+    if (!data || data.length === 0) return 0;
+
+    const record = data[0]; // Assuming only one object
+    const startIndex = monthOrder.indexOf(startMonth);
+    const endIndex = monthOrder.indexOf(endMonth);
+
+    if (startIndex === -1 || endIndex === -1) return 0;
+
+    const [from, to] =
+      startIndex < endIndex ? [startIndex, endIndex] : [endIndex, startIndex];
+
+    const sum = monthOrder
+      .slice(from, to + 1)
+      .reduce((acc, month) => acc + (record[month] || 0), 0);
+
+    console.log("Summed Range:", monthOrder.slice(from, to + 1));
+    console.log("Total Sum:", sum);
+
+    return sum;
+  }
   const calculateCumulative = (dataArray, startMonth, endMonth) => {
     const monthOrder = [
       "jan",
@@ -328,49 +426,60 @@ console.log('same');
     const targets = monthlyTargets.filter(
       (item) => item.officer_id === officer.id
     );
+
+    const goldTargets = monthlyTargets.filter(
+      (item) => item.officer_id === officer.id
+    );
     const total_target = filterTargetsByMonthRange(
       targets,
       startMonth,
-      selectedMonth.id
+      endMonth
     );
+    console.log(b, bob, p);
 
-    const b_percentage = months > 0 ? Math.round(b / months) + "%" : "0%";
-    const bob_percentage = months > 0 ? Math.round(bob / months) + "%" : "0%";
-    const p_percentage = months > 0 ? Math.round(p / months) + "%" : "0%";
+    const b_percentage = months > 0 ? Math.round(b / months) : 0;
+    const bob_percentage = months > 0 ? Math.round(bob / months) : 0;
+    const p_percentage = months > 0 ? Math.round(p / months) : 0;
+
+    const overoll_percentage = months > 0 ? Math.round(r / total_target) : 0;
+
+    const total_gl_target = total_target * gl;
     const gold_leaf_percentage =
-      r > 0 ? Math.round((gold_leaf / r) * 100) + "%" : "0%";
+      r > 0 ? Math.round((gold_leaf / total_gl_target) * 100) : 0;
 
     return {
       received: r,
       months,
+      overoll_percentage,
       gold_leaf,
       b_percentage,
       bob_percentage,
       p_percentage,
       gold_leaf_percentage,
+      total_gl_target,
       total_target,
     };
   };
 
-  const calculateData = (starttedMonth) => {
+  const showMoreModel = () => {
     const filtered = achievements.filter(
       (item) => item.officer_id === officer.id
     );
-    const summary = calculateCumulative(
-      filtered,
-      starttedMonth,
-      selectedMonth.id
-    );
-    setShorMoreModelVisible(true);
-    closeDataModel();
-    setShorMoreModelVisible(true);
-    setSummaryData(summary);
-  };
+    if (selectedMonth.id) {
+      console.log("///////////////////");
 
-  const showMoreModel = () => {
-    setShorMoreModelVisible(true);
+      const summary = calculateCumulative(
+        filtered,
+        selectedMonth.id,
+        selectedMonth.id
+      );
+      setSummaryData(summary);
+    }
     closeDataModel();
-    resetRange()
+    setShorMoreModelVisible(true);
+
+    resetRange();
+
     setShorMoreModelVisible(true);
   };
   return (
@@ -412,9 +521,7 @@ console.log('same');
           }}
         >
           <CustomButton
-            onClick={() => {
-
-            }}
+            onClick={() => {}}
             icon={<ReloadOutlined />}
             type="#910000"
           />
@@ -427,12 +534,6 @@ console.log('same');
                 onClick={() => handleSearch(off)}
               />
             ))}
-
-          <CustomButton
-            text="MALIDUWA"
-            onClick={() => setId(6)}
-            type="rgba(0, 10, 145, 0.78)"
-          />
         </div>
       </Card>
 
@@ -449,7 +550,7 @@ console.log('same');
           paddingBottom: "10px",
         }}
       >
-        {officer && filteredData && (
+        {/* {officer && filteredData && (
           <Card
             style={{
               display: "flex",
@@ -517,8 +618,9 @@ console.log('same');
               )}
             </div>
           </Card>
-        )}
-        {officer && filteredData && (
+        )} */}
+
+        {/* {officer && filteredData && (
           <Card
             style={{
               display: "flex",
@@ -612,140 +714,308 @@ console.log('same');
               )}
             </div>
           </Card>
-        )}
+        )} */}
       </div>
+      <OfficerProfileModal
+        officers={officers}
+        visible={isProfileModalVisible}
+        filteredData={filteredData}
+        monthlyTargetsFroSelectedOfficer={monthlyTargetsFroSelectedOfficer}
+        onClose={() => setIsProfileModalVisible(false)}
+        officer={selectedOfficer}
+        onContinue={(action = "default") => {
+          setIsProfileModalVisible(false);
+
+          switch (action) {
+            case "lastYear":
+              setLastYearVisible(true);
+              break;
+            case "monthly":
+              setMonthlyVisible(true);
+              break;
+            case "performance":
+              setSelectedMonth({ id: "jan", name: "January" });
+              setPerformanceVisible(true);
+              break;
+            default:
+              setIsDetailsModelVisible(true);
+              break;
+          }
+        }}
+      />
+
+      <LastYearModel
+        visible={lastYearVisible}
+        onClose={() => setLastYearVisible(false)}
+      />
+      <MonthlyProgressModal
+        visible={monthlyVisible}
+        onClose={() => setMonthlyVisible(false)}
+      />
+      <PerformanceModal
+        visible={performanceVisible}
+        onClose={() => setPerformanceVisible(false)}
+      />
+
       <Modal
         title={
-          selectedOfficer
-            ? selectedMonth.name + " Report of " + selectedOfficer.name
-            : selectedOfficer.id
+          targetForSelectedMonth.target
+            ? selectedOfficer
+              ? selectedMonth.name + " Report of " + selectedOfficer.name
+              : selectedOfficer.id
+            : "Select Month to Show the Reports"
         }
         visible={isDetailsModelVisible}
         onCancel={() => setIsDetailsModelVisible(false)}
         footer={null}
         centered
       >
-        <h2
-          style={{
-            margin: 0,
-            fontSize: "15px",
-          }}
-        >
-          Leaf Count
-        </h2>
-        <div
-          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
-        >
-          Target - {targetForSelectedMonth.target} kg
-        </div>
-        <div
-          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
-        >
-          Recived - {achivementFroSelectedMonth.value} kg
-        </div>
+        {officer && filteredData && (
+          <div
+            style={{
+              padding: "16px",
+              borderRadius: "8px",
+              marginBottom: "20px",
+            }}
+          >
+            {/* <h2
+              style={{
+                marginBottom: "16px",
+                fontSize: "18px",
+                textAlign: "center",
+              }}
+            >
+              Achievement Target
+            </h2> */}
 
-        <div
-          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
-        >
-          {getPercentage(
-            achivementFroSelectedMonth.value,
-            targetForSelectedMonth.target
-          )}
-        </div>
-        <h2
-          style={{
-            margin: 0,
-            fontSize: "15px",
-          }}
-        >
-          Gold Leaf (50%)
-        </h2>
-        <div
-          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
-        >
-          Target - {targetForSelectedMonth.target * gl} kg
-        </div>
+            {officers && (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, 1fr)",
+                  gap: "10px",
+                  width: "100%",
+                }}
+              >
+                {months
+                  .sort((a, b) => {
+                    const monthOrder = {
+                      jan: 1,
+                      feb: 2,
+                      mar: 3,
+                      apr: 4,
+                      may: 5,
+                      jun: 6,
+                      jul: 7,
+                      aug: 8,
+                      sep: 9,
+                      oct: 10,
+                      nov: 11,
+                      dece: 12,
+                    };
+                    return monthOrder[a.id] - monthOrder[b.id];
+                  })
+                  .map(
+                    (month) =>
+                      achievedMonths.has(month.id) && (
+                        <CustomButton
+                          key={month.id}
+                          text={month.name}
+                          type={
+                            achievedMonths.has(month.id)
+                              ? "rgb(0, 145, 31)"
+                              : "rgba(145, 0, 0, 0.78)"
+                          }
+                          onClick={
+                            achievedMonths.has(month.id)
+                              ? () => showDataModel(month)
+                              : () => console.log("Month not achieved")
+                          }
+                          style={{
+                            textAlign: "center",
+                            padding: "6px 10px",
+                          }}
+                        />
+                      )
+                  )}
+              </div>
+            )}
+          </div>
+        )}
+        {targetForSelectedMonth.target && (
+          <>
+            {/* Top Section (2 Cards) */}
+            {/* Top Section (Leaf Count + Super Leaf) */}
+            <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+              {/* Leaf Count */}
+              <div
+                style={{
+                  flex: 1,
+                  border: "1px solid #ccc",
+                  borderRadius: "8px",
+                  padding: "10px",
+                  backgroundColor: "#f9f9f9",
+                }}
+              >
+                <h2 style={{ margin: 0, fontSize: "15px" }}>Leaf Count</h2>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    marginTop: "10px",
+                  }}
+                >
+                  <div style={{ fontSize: "15px", fontWeight: "bold" }}>
+                    <div>Target - {targetForSelectedMonth.target} kg</div>
+                    <div>Received - {achivementFroSelectedMonth.value} kg</div>
+                  </div>
+                  <div>
+                    <Progress
+                      type="circle"
+                      
+                      percent={getPercentage(
+                        achivementFroSelectedMonth.value,
+                        targetForSelectedMonth.target
+                      )}
+                    />
+                  </div>
+                </div>
+              </div>
 
-        <div
-          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
-        >
-          Recived - {achivementFroSelectedMonth.gold_leaf} kg
-        </div>
-        <div
-          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
-        >
-          {getPercentage(
-            achivementFroSelectedMonth.gold_leaf,
-            targetForSelectedMonth.target * gl
-          )}
-        </div>
-        <h2
-          style={{
-            margin: 0,
-            fontSize: "15px",
-          }}
-        >
-          B (60%)
-        </h2>
-        <div
-          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
-        >
-          Target - {targetForSelectedMonth.target * b} kg
-        </div>
+              {/* Super Leaf */}
+              <div
+                style={{
+                  flex: 1,
+                  border: "1px solid #ccc",
+                  borderRadius: "8px",
+                  padding: "10px",
+                  backgroundColor: "#f9f9f9",
+                }}
+              >
+                <h2 style={{ margin: 0, fontSize: "15px" }}>
+                  Super Leaf (50%)
+                </h2>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    marginTop: "10px",
+                  }}
+                >
+                  <div style={{ fontSize: "15px", fontWeight: "bold" }}>
+                    <div>Target - {targetForSelectedMonth.target * gl} kg</div>
+                    <div>
+                      Received - {achivementFroSelectedMonth.gold_leaf} kg
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "15px",
+                      fontWeight: "bold",
+                      minWidth: "80px",
+                    }}
+                  >
+                    <Progress
+                      type="circle"
+                       strokeColor="#877c07"
+                      percent={getPercentage(
+                        achivementFroSelectedMonth.gold_leaf,
+                        targetForSelectedMonth.target * gl
+                      )}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
 
-        <div
-          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
-        >
-          Recived - {achivementFroSelectedMonth.B} % (
-          {(achivementFroSelectedMonth.value * achivementFroSelectedMonth.B) /
-            100}
-          kg )
-        </div>
-        <h2
-          style={{
-            margin: 0,
-            fontSize: "15px",
-          }}
-        >
-          BB (10%)
-        </h2>
-        <div
-          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
-        >
-          Target - {targetForSelectedMonth.target * bb}
-        </div>
+            {/* Super Leaf */}
 
-        <div
-          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
-        >
-          Recived - {achivementFroSelectedMonth.BoB} % (
-          {(achivementFroSelectedMonth.value * achivementFroSelectedMonth.BoB) /
-            100}
-          kg )
-        </div>
+            {/* Bottom Section (3 Cards) */}
+            <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+              {/* B */}
+              <div
+                style={{
+                  flex: 1,
+                  border: "1px solid #ccc",
+                  borderRadius: "8px",
+                  padding: "10px",
+                }}
+              >
+                <h2 style={{ margin: 0, fontSize: "15px" }}>B (60%)</h2>
 
-        <h2
-          style={{
-            margin: 0,
-            fontSize: "15px",
-          }}
-        >
-          P (30%)
-        </h2>
-        <div
-          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
-        >
-          Target - {targetForSelectedMonth.target * p}
-        </div>
+                <div
+                  style={{
+                    fontSize: "15px",
+                    fontWeight: "bold",
+                    textAlign: "center",
+                  }}
+                ><Progress
+                percent=         {achivementFroSelectedMonth.B} 
+                 strokeColor="#005e1e"
+              />
+           
+                </div>
+              </div>
 
-        <div
-          style={{ fontSize: "15px", fontWeight: "bold", textAlign: "center" }}
-        >
-          Recived - {achivementFroSelectedMonth.P} %(
-          {(achivementFroSelectedMonth.value * achivementFroSelectedMonth.P) /
-            100}
-          kg )
-        </div>
+              {/* BB */}
+              <div
+                style={{
+                  flex: 1,
+                  border: "1px solid #ccc",
+                  borderRadius: "8px",
+                  padding: "10px",
+                }}
+              >
+                <h2 style={{ margin: 0, fontSize: "15px" }}>BB (10%)</h2>
+         
+                <div
+                  style={{
+                    fontSize: "15px",
+                    fontWeight: "bold",
+                    textAlign: "center",
+                  }}
+                >
+                  <Progress
+                    percent=  {achivementFroSelectedMonth.BoB}
+                    strokeColor="#1890ff"  
+                  />
+                <div>
+               
+             
+                </div>
+                </div>
+              </div>
+
+              {/* P */}
+              <div
+                style={{
+                  flex: 1,
+                  border: "1px solid #ccc",
+                  borderRadius: "8px",
+                  padding: "10px",
+                }}
+              >
+                <h2 style={{ margin: 0, fontSize: "15px" }}>P (30%)</h2>
+                
+                <div
+                  style={{
+                    fontSize: "15px",
+                    fontWeight: "bold",
+                    textAlign: "center",
+                  }}
+                >
+                  <Progress
+                    percent=  {achivementFroSelectedMonth.P}
+                   strokeColor="#910000"
+                  />
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
         <CustomButton
           text={"More"}
           type={"rgb(44, 0, 145)"}
@@ -758,6 +1028,7 @@ console.log('same');
           onClick={() => showMoreModel()}
         />
       </Modal>
+
       <Modal
         title={"Select Month Range"}
         visible={isShorMoreModel}
@@ -766,16 +1037,17 @@ console.log('same');
         centered
         width={"60%"}
       >
+        {/* Header Controls */}
         <div
           style={{
             display: "flex",
-            justifyContent: "space-between", // Distribute buttons evenly
+            justifyContent: "space-between",
             alignItems: "center",
             flexWrap: "wrap",
             gap: "10px",
+            marginBottom: "20px",
           }}
         >
-          {" "}
           <CustomButton
             type="#f0f0f0"
             onClick={resetRange}
@@ -785,18 +1057,125 @@ console.log('same');
               border: "1px solid #d9d9d9",
             }}
           />
-          {months
-            .filter((month) => achievedMonths.has(month.id)) // Only the achieved months
-            .sort((a, b) => monthOrder.indexOf(a.id) - monthOrder.indexOf(b.id)) // Sort by month order
-            .length > 0 && (
+          {months.filter((month) => achievedMonths.has(month.id)).length >
+            0 && (
             <MonthRangeSelector
-            key={monthSelectorKey}
-              months={months.filter((month) => achievedMonths.has(month.id))} // Pass the filtered months
-              onRangeChange={handleRangeChange} // Call the handleRangeChange function
+              key={monthSelectorKey}
+              months={months.filter((month) => achievedMonths.has(month.id))}
+              onRangeChange={handleRangeChange}
             />
           )}
         </div>
-        {summaryData && summaryData.months}
+
+        {/* 3 Segments in a Row */}
+
+        {summaryData && (
+          <>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: "20px",
+                paddingBottom: "20px",
+                flexWrap: "nowrap",
+              }}
+            >
+              {/* Segment 1 */}
+              <div
+                style={{
+                  width: "33%",
+                  backgroundColor: "#f9f9f9",
+                  border: "1px solid rgb(0, 0, 0)",
+                  borderRadius: "8px",
+                  padding: "16px",
+                  boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
+                }}
+              >
+                <h3>Basic Summary</h3>
+                <div>
+                  <strong>Received:</strong> {summaryData?.received}
+                </div>
+                <div>
+                  <strong>Total Target:</strong> {summaryData?.total_target}
+                </div>
+                <div>
+                  <strong>Overall %:</strong>
+                  <Progress
+                    percent={getPercentage(
+                      summaryData?.received,
+                      summaryData?.total_target
+                    )}
+                    strokeColor="#910000"
+                  />
+                </div>
+              </div>
+
+              {/* Segment 2 */}
+              <div
+                style={{
+                  width: "33%",
+                  backgroundColor: "#f9f9f9",
+                  border: "1px solid rgb(0, 0, 0)",
+                  borderRadius: "8px",
+                  padding: "16px",
+                  boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
+                }}
+              >
+                <h3>Super Leaf Details</h3>
+                <div>
+                  <strong>Super Leaf Target:</strong>{" "}
+                  {summaryData?.total_gl_target}
+                </div>
+                <div>
+                  <strong>Super:</strong> {summaryData?.gold_leaf}
+                </div>
+                <div>
+                  <strong>Super %:</strong>
+                  <Progress
+                    percent={summaryData?.gold_leaf_percentage}
+                    strokeColor="#877c07"
+                  />
+                </div>
+              </div>
+
+              {/* Segment 3 */}
+              <div
+                style={{
+                  width: "33%",
+                  backgroundColor: "#f9f9f9",
+                  border: "1px solid rgb(0, 0, 0)",
+                  borderRadius: "8px",
+                  padding: "16px",
+                  boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
+                }}
+              >
+                <h3 style={{ marginTop: 0 }}>Category Percentages</h3>
+                <div>
+                  <strong>B %:</strong>
+                  <Progress
+                    percent={summaryData?.b_percentage}
+      
+                     strokeColor="#005e1e"
+                  />
+                </div>
+                <div>
+                  <strong>BB %:</strong>
+                  <Progress
+                    percent={summaryData?.bob_percentage}
+                     strokeColor="#1890ff"  
+                  />
+                </div>
+                <div>
+                  <strong>P %:</strong>
+                  <Progress
+                    percent={summaryData?.p_percentage}
+                      strokeColor="#910000"
+                  />
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </Modal>
 
       {/* {!officer && <Card>{total}</Card>} */}
