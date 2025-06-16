@@ -9,9 +9,10 @@ import {
   HighlightOutlined,
   ShopOutlined,
   WalletOutlined,
-  SettingOutlined
+  SettingOutlined,
+  CarOutlined
 } from "@ant-design/icons";
-import { Archive, EmojiFoodBeverageOutlined, FoodBankOutlined, FoodBankSharp, MedicalInformation } from "@mui/icons-material";
+import { Archive, EmojiFoodBeverageOutlined, FoodBankOutlined, FoodBankSharp, MedicalInformation, VerticalShadesClosed } from "@mui/icons-material";
 import icon from "../images/logo.ico";
 
 const { Header } = Layout;
@@ -64,8 +65,8 @@ const HeaderComponent = () => {
          <Menu.Item key="meal" icon={<EmojiFoodBeverageOutlined />}>
           <Link to="/meal">Meal Management</Link>
         </Menu.Item>
-        <Menu.Item key="advance" icon={<WalletOutlined />}>
-          <Link to="/advance">Loan & Advance</Link>
+        <Menu.Item key="vehicles" icon={<CarOutlined />}>
+          <Link to="/vehicles">Loan & Advance</Link>
         </Menu.Item>
         {/* <Menu.Item key="loan-management" icon={<SettingOutlined />}>
           <Link to="/loan-management">Loan Management</Link>

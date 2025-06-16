@@ -11,6 +11,7 @@ import RegisterPage from "./pages/RegistrationForm";
 import SupplierById from "./pages/SupplierById";
 import MealManagement from "./pages/MealManagement";
 import Suppliers from "./pages/Suppliers"; // Assuming this is the correct import for the Suppliers page
+import Vehicles from "./pages/Vehicles";
 
 const LayoutWithHeader = () => (
   <>
@@ -35,9 +36,13 @@ const App = () => {
           <Route path="/factory-targets" element={<FactoryTargetAchievemenets />} />
           <Route path="/employees" element={<EmployeeManagementPage />} />
           <Route path="/leaf-count" element={<LeafCountChart />} />
+
           <Route path="/meal" element={<MealManagement />} />
           <Route path="/supplier/:id" element={<SupplierById />} />
           <Route path="/suppliers" element={<Suppliers />} />
+
+
+          <Route path="/vehicles" element={<Vehicles />} />
 
           {/* 404 Route */}
 
