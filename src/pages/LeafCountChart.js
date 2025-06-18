@@ -208,7 +208,18 @@ const LeafCountChart = () => {
 
   const uniqueOfficers = ["All", ...Object.keys(officerLineMap)];
   const filteredLines = filters.officer === "All" ? [] : ["All", ...(officerLineMap[filters.officer] || [])];
-  const uniqueMonths = ["All", ...new Set(data.filter(d => d.date.startsWith(filters.year)).map(d => d.date.slice(5, 7)))];
+  const uniqueMonths = ["All", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = String(currentDate.getMonth() + 1).padStart(2, "0");
+
+  const filteredMonths = uniqueMonths
+    .filter(m => m !== "All")
+    .filter(m => {
+      if (parseInt(filters.year) < currentYear) return true;
+      return m <= currentMonth;
+    })
+    .sort();
 
   const cardStyle = {
     background: "rgba(0, 0, 0, 0.6)",
@@ -240,33 +251,7 @@ const LeafCountChart = () => {
 
                 </Button>
               </Col>
-              <Col md={2}>
-                <Select
-                  className="year-select"
-                  value={filters.year}
-                  onChange={val => setFilters(f => ({ ...f, year: val, month: "All" }))}
-                  style={{
-                    width: "100%",
-                    backgroundColor: "rgba(0, 0, 0, 0.6)",
-                    color: "#fff",
-                    border: "1px solid #333",
-                    borderRadius: 6,
-                    cursor: "pointer"
-                  }}
-                  dropdownStyle={{
-                    backgroundColor: "rgba(0, 0, 0, 0.9)",
-                    color: "#fff"
-                  }}
-                  bordered={false}
-                  optionFilterProp="children"
-                  filterOption={(input, option) =>
-                    option.children.toLowerCase().includes(input.toLowerCase())
-                  }
-                >
-                  <Option value="2024">2024</Option>
-                  <Option value="2025">2025</Option>
-                </Select>
-              </Col>
+
 
 
 
@@ -312,7 +297,44 @@ const LeafCountChart = () => {
                   ))}
                 </Select>
               </Col>
-
+              <Col md={2}>
+                <Select
+                  className="year-select"
+                  value={filters.year}
+                  onChange={val => setFilters(f => ({ ...f, year: val, month: "All" }))}
+                  style={{
+                    width: "100%",
+                    backgroundColor: "rgba(0, 0, 0, 0.6)",
+                    color: "#fff",
+                    border: "1px solid #333",
+                    borderRadius: 6,
+                    cursor: "pointer"
+                  }}
+                  dropdownStyle={{
+                    backgroundColor: "rgba(0, 0, 0, 0.9)",
+                    color: "#fff"
+                  }}
+                  bordered={false}
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  <Option value="2024">2024</Option>
+                  <Option value="2025">2025</Option>
+                </Select>
+              </Col>
+              {filteredMonths.filter(m => m !== "All").sort().map(m => (
+                <Col xs={8} sm={4} md={2} key={m}>
+                  <Button
+                    type={filters.month === m ? "primary" : "default"}
+                    onClick={() => setFilters(prev => ({ ...prev, month: m }))}
+                    style={{ width: "100%", background: filters.month === m ? "#1890ff" : "#000", color: "#fff", borderColor: "#333" }}
+                  >
+                    {monthMap[m]}
+                  </Button>
+                </Col>
+              ))}
             </Row>
           </Card>
         </div>
@@ -339,7 +361,7 @@ const LeafCountChart = () => {
         )}
 
         {/* Month filter */}
-        {filters.line !== "All" && (
+        {/* {filters.line !== "All" && (
           <div key={`month-${filters.line}`}>
             <Card bordered={false} className="fade-in" style={cardStyle}>
               <Row gutter={[12, 12]}>
@@ -357,7 +379,7 @@ const LeafCountChart = () => {
               </Row>
             </Card>
           </div>
-        )}
+        )} */}
 
         {/* Filter Summary */}
         {filters.month !== "All" && filters.officer !== "All" && filters.line !== "All" && (
