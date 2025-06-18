@@ -180,10 +180,83 @@
 .custom-input.ant-form-item-has-error .ant-select-selector,
 .custom-input.ant-form-item-has-error .ant-picker,
 .custom-input.ant-form-item-has-error .ant-input-textarea {
-  border-color: #ff4d4f !important;
+  border-color: #006f91 !important;
   box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2) !important;
+}
+input::placeholder {
+  color: #ffffff;
+
 }
 
 .white-label .ant-form-item-label>label {
   color: white !important;
+}
+
+
+
+/* Make all table borders red */
+.red-bordered-table .ant-table,
+.red-bordered-table .ant-table-container,
+.red-bordered-table .ant-table-content,
+.red-bordered-table .ant-table-thead > tr > th,
+.red-bordered-table .ant-table-tbody > tr > td {
+  border: 0.5px solid rgb(255, 255, 255) !important;
+}
+
+.red-bordered-table .ant-table-thead > tr > th,
+.red-bordered-table .ant-table-tbody > tr > td {
+  border: 0.2px solid rgb(172, 172, 172) !important;
+}
+
+.sup-bordered-table .ant-table-thead > tr > th,
+.sup-bordered-table .ant-table-tbody > tr > td  {
+  border: 0.2px solid rgb(0, 0, 0) !important;
+  background: transparent !important;
+}
+
+/* For a glassy, modern dark table look */
+.sup-bordered-table .ant-table {
+  background: rgba(0, 0, 0, 0.466);
+  overflow: hidden;
+}
+
+.sup-bordered-table .ant-table-thead > tr > th {
+  background: #1a1a1a;
+  color: #f0f0f0;
+  font-weight: bold;
+  font-size: 13px;
+  text-align: center;
+}
+
+.sup-bordered-table .ant-table-tbody > tr > td {
+  background: rgba(0, 0, 0, 0.904);
+  color: #f5f5f5;
+  font-size: 13px;
+  border-color: #444;
+  text-align: center;
+  padding: 8px 12px;
+}
+
+.sup-bordered-table .ant-table-tbody > tr:hover > td {
+  background: rgba(0, 255, 200, 0.877);
+  transition: background 0.3s ease;
+}
+
+.sup-bordered-table .ant-pagination {
+  background-color: rgba(0, 0, 0, 0.801);
+  padding: 8px;
+  border-radius: 0 0 12px 12px;
+  color: #fff;
+}
+
+.sup-bordered-table .ant-pagination-item,
+.sup-bordered-table .ant-pagination-prev,
+.sup-bordered-table .ant-pagination-next {
+  border: none;
+  color: #fff;
+}
+
+.sup-bordered-table .ant-pagination-item-active {
+  background-color: #0000006b;
+  color: #ffffff;
 }

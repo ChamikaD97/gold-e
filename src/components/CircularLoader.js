@@ -12,7 +12,7 @@ const CircularLoader = () => {
       alignItems: "center",
       flexDirection: "column",
       borderRadius: 20,
-      backgroundColor: "rgba(0, 0, 0, 0.6)",
+      backgroundColor: "rgba(0, 0, 0, 0)",
     }}>
       <div className="circular-loader">
         <svg className="progress-ring spinning-ring" width="120" height="120">

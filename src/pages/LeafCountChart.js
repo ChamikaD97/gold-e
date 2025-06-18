@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Card, Col, Row, Select, Typography, Button, Table,
-  Tooltip
+  Tooltip,
 } from "antd";
 import { MinusCircleFilled, PlusCircleFilled, ReloadOutlined } from "@ant-design/icons";
 import leaf_collection_data from "./data/leaf_collection_data.json";
@@ -9,16 +9,15 @@ import '../App.css'; // Import your CSS file here
 import { getSuppliersMarkedXOnDate } from "./utils/dashboardMetrics";
 import { setNotificationDate, setLeafRound } from "../redux/commonDataSlice";
 
+import { Input } from "antd";
 
+import CircularLoader from "../components/CircularLoader";
 
 import { useDispatch, useSelector } from "react-redux";
+import SupplierLeafModal from "../components/SupplierLeafModal";
 
 const { Option } = Select;
 const { Text } = Typography;
-
-
-
-
 
 const LeafCountChart = () => {
   const [data, setData] = useState([]);
@@ -28,15 +27,22 @@ const LeafCountChart = () => {
   const officerLineMap = useSelector((state) => state.officerLine?.officerLineMap || {});
   const monthMap = useSelector((state) => state.commonData?.monthMap);
   const allLines = useSelector(state => state.officerLine.allLines || []);
+  const { isLoading } = useSelector((state) => state.loader);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const [suppliersMarkedTomorrow, setSuppliersMarkedTomorrow] = useState([]);
   const notificationDate = useSelector((state) => state.commonData?.notificationDate);
   const dispatch = useDispatch()
-
+  const [selectedSupplierId, setSelectedSupplierId] = useState(null);
+  const [selectedDate, setSelectedDate] = useState("2025-06-01");
   useEffect(() => {
     setData(leaf_collection_data);
   }, []);
-
+  const handleSupplierClick = (record) => {
+    setSelectedSupplierId(record.supplier_id);
+    setSelectedDate(record.date || "2025-06-01"); // Use a fallback
+    setModalOpen(true);
+  };
   const filteredData = useMemo(() => {
     let result = data.filter(d => d.date.startsWith(filters.year));
     if (filters.month !== "All") result = result.filter(d => d.date.slice(5, 7) === filters.month);
@@ -82,6 +88,10 @@ const LeafCountChart = () => {
     return result;
   }
 
+  useEffect(() => {
+    console.log(filters);
+
+  }, [filters.line, filters.month, filters.year])
   useEffect(() => {
     if (filters.month !== "All") {
       const daysInMonth = new Date(parseInt(filters.year), parseInt(filters.month), 0).getDate();
@@ -186,10 +196,25 @@ const LeafCountChart = () => {
           key: "supplier_id",
           fixed: "left",
           align: "center",
-          width: 120
+          width: 120,
+          render: (text, record) => (
+            <Button
+              style={{
+                backgroundColor: "#006623",
+                color: "#fff", // optional: to ensure text is visible on dark background
+                border: "none", fontSize: 15, fontWeight: "500",
+              }}
+              onClick={() => handleSupplierClick(record)}
+            >
+              {text}
+            </Button>
+
+          )
+
         },
         ...dayCols
       ]);
+
 
       setTableData(dataSource);
 
@@ -206,7 +231,6 @@ const LeafCountChart = () => {
   }, [filteredData, filters.month, 6]);
 
 
-  const uniqueOfficers = ["All", ...Object.keys(officerLineMap)];
   const filteredLines = filters.officer === "All" ? [] : ["All", ...(officerLineMap[filters.officer] || [])];
   const uniqueMonths = ["All", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
   const currentDate = new Date();
@@ -232,8 +256,21 @@ const LeafCountChart = () => {
     `${filters.officer !== "All" ? `Officer: ${filters.officer}, ` : ""}` +
     `${filters.line !== "All" ? `Line: ${filters.line}` : ""}`.trim();
 
+  const filteredTableData = tableData.filter(item =>
+    (!filters.supplierId || item.supplier_id.startsWith(filters.supplierId))
+  );
+
+
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+
+      <SupplierLeafModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        supplierId={selectedSupplierId}
+        selectedDate={selectedDate}
+      />
+
       <div style={{ flex: "0 0 auto", marginBottom: 16 }}>
 
         {/* Reset + Year + Officers */}
@@ -251,11 +288,6 @@ const LeafCountChart = () => {
 
                 </Button>
               </Col>
-
-
-
-
-
               <Col md={2}>
                 <Select
                   showSearch
@@ -324,17 +356,72 @@ const LeafCountChart = () => {
                   <Option value="2025">2025</Option>
                 </Select>
               </Col>
-              {filteredMonths.filter(m => m !== "All").sort().map(m => (
-                <Col xs={8} sm={4} md={2} key={m}>
-                  <Button
-                    type={filters.month === m ? "primary" : "default"}
-                    onClick={() => setFilters(prev => ({ ...prev, month: m }))}
-                    style={{ width: "100%", background: filters.month === m ? "#1890ff" : "#000", color: "#fff", borderColor: "#333" }}
-                  >
-                    {monthMap[m]}
-                  </Button>
-                </Col>
-              ))}
+              <Col md={3}>
+
+                <Select
+                  value={filters.month}
+                  onChange={(value) => setFilters((prev) => ({ ...prev, month: value }))}
+                  style={{
+                    width: "100%",
+                    backgroundColor: "rgba(0, 0, 0, 0.6)",
+                    color: "#fff",
+                    border: "1px solid #333",
+                    borderRadius: 6,
+                    cursor: "pointer"
+                  }}
+                  dropdownStyle={{
+                    backgroundColor: "rgba(0, 0, 0, 0.9)",
+                    color: "#fff"
+                  }}
+                  bordered={false}
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  {filteredMonths
+                    .filter((m) => m !== "All")
+                    .sort()
+                    .map((m) => (
+                      <Option key={m} value={m}>
+                        {monthMap[m]}
+                      </Option>
+                    ))}
+                </Select>
+
+              </Col>
+              <Col md={2}>
+                <Text style={{ color: "#fff", paddingTop: 6 }}>   Supplier ID</Text>
+
+              </Col>
+              <Col md={4}>
+                <Input
+                  className="custom-supplier-input"
+
+                  value={filters.supplierId || ""}
+                  onChange={(e) => {
+                    if (e.target.value !== "Search Supplier ID") {
+                      setFilters((prev) => ({ ...prev, supplierId: e.target.value }))
+                    }
+
+                    setFilters((prev) => ({ ...prev, supplierId: e.target.value }))
+
+                  }}
+                  style={{
+                    width: "100%",
+                    backgroundColor: "rgb(0, 0, 0)",
+                    color: "#fff",
+
+                    border: "1px solid #333",
+                    borderRadius: 6,
+                    cursor: "text"
+                  }}
+                  allowClear
+                />
+              </Col>
+              {filters.line}
+              {filters.year}
+              {filters.month}
             </Row>
           </Card>
         </div>
@@ -360,28 +447,7 @@ const LeafCountChart = () => {
           </div>
         )}
 
-        {/* Month filter */}
-        {/* {filters.line !== "All" && (
-          <div key={`month-${filters.line}`}>
-            <Card bordered={false} className="fade-in" style={cardStyle}>
-              <Row gutter={[12, 12]}>
-                {uniqueMonths.filter(m => m !== "All").sort().map(m => (
-                  <Col xs={8} sm={4} md={2} key={m}>
-                    <Button
-                      type={filters.month === m ? "primary" : "default"}
-                      onClick={() => setFilters(prev => ({ ...prev, month: m }))}
-                      style={{ width: "100%", background: filters.month === m ? "#1890ff" : "#000", color: "#fff", borderColor: "#333" }}
-                    >
-                      {monthMap[m]}
-                    </Button>
-                  </Col>
-                ))}
-              </Row>
-            </Card>
-          </div>
-        )} */}
 
-        {/* Filter Summary */}
         {filters.month !== "All" && filters.officer !== "All" && filters.line !== "All" && (
           <div key={`summary-${filters.month}`}>
             <Card bordered={false} className="fad-in" style={cardStyle}>
@@ -401,18 +467,24 @@ const LeafCountChart = () => {
           </Card>
         )}
         {/* Table */}
+
         {filters.month !== "All" && (
           <div key={`table-${filters.month}`}>
+            {!filteredTableData && (
+              <CircularLoader />
+            )}
             <Card bordered={false} className="d-in" style={cardStyle}>
               <Table
+                className="red-bordered-table"
                 columns={columns}
-                dataSource={tableData}
+                dataSource={filteredTableData}
                 pagination={false}
                 scroll={{ x: "max-content" }}
                 bordered
                 size="small"
                 rowKey="supplier_id"
               />
+
             </Card>
           </div>
         )}

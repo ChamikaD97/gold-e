@@ -9,7 +9,7 @@ export const fetchSuppliers = createAsyncThunk(
     "supplier/fetchSuppliers",
     async (supplierId = "", { rejectWithValue }) => {
         try {
-      const formattedUrl = `http://newserver:46597/quiX/DataStruts/GetJSONData?req=5$#F001@000001$F002@9999999$F003@${supplierId}`;
+            const formattedUrl = `http://newserver:46597/quiX/DataStruts/GetJSONData?req=5$#F001@000001$F002@9999999$F003@${supplierId}`;
             const response = await axios.get(formattedUrl);
             return response.data;
         } catch (error) {
@@ -53,6 +53,10 @@ const supplierSlice = createSlice({
         setJoinedDate: (state, action) => {
             state.joinedDate = action.payload;
         },
+
+        setSuppliersByRoutes: (state, action) => {
+            state.suppliers = action.payload;
+        },
         setSelectedLine: (state, action) => {
             state.selectedLine = action.payload;
         },
@@ -90,7 +94,7 @@ export const {
     addSupplier,
     updateSupplier,
     filterSuppliersById,
-    setJoinedDate,
+    setJoinedDate, setSuppliersByRoutes,
     setSelectedLine,
     setSelectedOfficer,
     clearSupplierState,
