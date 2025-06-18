@@ -240,11 +240,6 @@ const LeafCountChart = () => {
 
                 </Button>
               </Col>
-
-
-
-           
-
               <Col md={2}>
                 <Select
                   className="year-select"
@@ -274,29 +269,8 @@ const LeafCountChart = () => {
               </Col>
 
 
-           {uniqueOfficers.filter(o => o !== "All").map(o => (
-             <Col xs={8} sm={4} md={3} key={o}>
-               <Button
-                 type={filters.officer === o ? "primary" : "default"}
-                 onClick={() =>
-                   setFilters(prev => ({
-                     ...prev,
-                     officer: o,
-                     line: o === "Malinduwa" ? "M" : "All",
-                     month: "All"
-                   }))
-                 }
-                 style={{
-                   width: "100%",
-                   background: filters.officer === o ? "#1890ff" : "#000",
-                   color: "#fff",
-                   borderColor: "#333"
-                 }}
-               >
-                 {o}
-               </Button>
-             </Col>
-           ))}
+
+
               <Col md={2}>
                 <Select
                   showSearch

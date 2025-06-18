@@ -1,47 +1,169 @@
-
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Card, Col, Row, Button, Table
+  Card, Col, Row, Button, Table,
+  Select
 } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchSuppliers, clearSupplierState } from "../redux/supplierSlice";
+import lineIdCodeMap from "../data/lineIdCodeMap.json";
 
 const Suppliers = () => {
-  const [filters, setFilters] = useState({ year: "2024", month: "All", officer: "All", line: "All" });
-  const dispatch = useDispatch();
+  const { Option } = Select;
 
-  const officerLineMap = useSelector((state) => state.officerLine.officerLineMap);
-  const { suppliers, loading, error } = useSelector((state) => state.supplier);
+  const [filters, setFilters] = useState({ year: "2024", month: "All", line: "All" });
+  const [suppliers, setSuppliers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const columns = [
-    { title: "Supplier ID", dataIndex: "id", key: "id" },
-    { title: "Name", dataIndex: "name", key: "name" },
-    { title: "Line", dataIndex: "line", key: "line" },
-    { title: "Joined", dataIndex: "joinedDate", key: "joinedDate" }
+  const apiKey = "quix717244";
+  const fetchSupplierDataFromAPI = async (lineCode) => {
+    const baseUrl = "/quiX/ControllerV1/supdata";
+    const params = new URLSearchParams({
+      k: apiKey,
+      r: lineCode
+    });
+    const url = `${baseUrl}?${params.toString()}`;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to fetch supplier data");
+      const data = await response.json();
+
+      // ✅ Ensure it's an array
+      if (Array.isArray(data)) {
+        setSuppliers(data);
+      } else if (data && typeof data === "object") {
+        setSuppliers([data]); // wrap in array if it's a single object
+      } else {
+        setSuppliers([]); // fallback empty array
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load supplier data");
+      setSuppliers([]); // reset on error
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSuppslierDataFromAPI = async (lineCode) => {
+    const baseUrl = "/quiX/ControllerV1/supdata";
+    const params = new URLSearchParams({
+      k: apiKey,
+      r: lineCode
+    });
+    const url = `${baseUrl}?${params.toString()}`;
+    console.log("Fetching:", url);
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to fetch supplier data");
+      const data = await response.json();
+      setSuppliers(data);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load supplier data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const lineIdToCodeMap = useMemo(() => {
+    const map = {};
+    lineIdCodeMap.forEach(item => {
+      map[item.lineId] = item.lineCode;
+    });
+    return map;
+  }, []);
+
+  const uniqueLines = [{ label: "All", value: "All" },
+  ...lineIdCodeMap
+    .filter(l => l.lineCode && l.lineId)
+    .map(l => ({
+      label: `${l.lineCode} - ${l.lineId}`,
+      value: l.lineId
+
+    }))
   ];
 
-  const uniqueOfficers = ["All", ...Object.keys(officerLineMap)];
-  const filteredLines = filters.officer === "All"
-    ? ["All"]
-    : ["All", ...(officerLineMap[filters.officer]?.map(l => l.code) || [])];
-
-  const selectedLineDetails = useMemo(() => {
-    if (filters.officer === "All" || filters.line === "All") return null;
-    const officerLines = officerLineMap[filters.officer] || [];
-    if (typeof officerLines[0] === "object") {
-      return officerLines.find(item => item.code === filters.line);
-    }
-    return { line: null, code: filters.line, officer: filters.officer };
-  }, [filters.officer, filters.line, officerLineMap]);
 
   useEffect(() => {
-    if (filters.line !== "All" && filters.officer !== "All") {
-      dispatch(fetchSuppliers(filters.line));
+    if (filters.line !== "All") {
+      fetchSupplierDataFromAPI(filters.line);
     } else {
-      dispatch(clearSupplierState());
+      setSuppliers([]);
     }
-  }, [filters.line, filters.officer, dispatch]);
+  }, [filters.line]);
+
+  const columns = [
+    {
+      title: "Supplier ID",
+      dataIndex: "Supplier Id",
+      key: "supplierId",
+      sorter: (a, b) => a["Supplier Id"].localeCompare(b["Supplier Id"])
+    },
+    {
+      title: "Name",
+      dataIndex: "Supplier Name",
+      key: "supplierName",
+      filterSearch: true,
+      filters: [...new Set(suppliers.map(s => s["Supplier Name"]))].map(name => ({ text: name, value: name })),
+      onFilter: (value, record) => record["Supplier Name"] === value
+    },
+    {
+      title: "Route",
+      dataIndex: "Route",
+      key: "route",
+      render: (value) => lineIdToCodeMap[value] || value,
+      filters: [...new Set(suppliers.map(s => s.Route))].map(r => ({
+        text: lineIdToCodeMap[r] || r,
+        value: r
+      })),
+      onFilter: (value, record) => record.Route === value
+    },
+    {
+      title: "Pay Category",
+      dataIndex: "Pay",
+      key: "pay",
+      filters: [
+        { text: "Type 1", value: 1 },
+        { text: "Type 2", value: 2 },
+        { text: "Type 3", value: 3 }
+      ],
+      onFilter: (value, record) => record.Pay === value
+    },
+    {
+      title: "Bank",
+      dataIndex: "Bank",
+      key: "bank"
+    },
+    {
+      title: "Bank A/C",
+      dataIndex: "Bank AC",
+      key: "bankAc"
+    },
+    {
+      title: "NIC",
+      dataIndex: "NIC",
+      key: "nic"
+    },
+    {
+      title: "Contact",
+      dataIndex: "Contact",
+      key: "contact"
+    },
+    {
+      title: "Joined Date",
+      dataIndex: "Joined Date",
+      key: "joinedDate",
+      sorter: (a, b) => new Date(a["Joined Date"]) - new Date(b["Joined Date"])
+    }
+  ];
 
   const cardStyle = { background: "rgba(0, 0, 0, 0.6)", color: "#fff", borderRadius: 12, marginBottom: 6 };
 
@@ -56,65 +178,23 @@ const Suppliers = () => {
                 danger
                 type="primary"
                 block
-                onClick={() => setFilters({ year: "2025", month: "All", officer: "All", line: "All" })}
+                onClick={() => setFilters({ year: "2025", month: "All", line: "All" })}
               />
             </Col>
-            {uniqueOfficers.filter(o => o !== "All").map(o => (
-              <Col xs={8} sm={4} md={3} key={o}>
-                <Button
-                  type={filters.officer === o ? "primary" : "default"}
-                  onClick={() =>
-                    setFilters(prev => ({
-                      ...prev,
-                      officer: o,
-                      line: "All",
-                      month: "All"
-                    }))
-                  }
-                  style={{
-                    width: "100%",
-                    background: filters.officer === o ? "#1890ff" : "#000",
-                    color: "#fff",
-                    borderColor: "#333"
-                  }}
-                >
-                  {o}
-                </Button>
-              </Col>
-            ))}
+            <Select
+              value={filters.line}
+              onChange={val => setFilters(prev => ({ ...prev, line: val }))}
+              style={{ width: "100%" }}
+            >
+              {uniqueLines.map(line => (
+                <Option key={line.value} value={line.value}>
+                  {line.label}
+                </Option>
+              ))}
+            </Select>
+
           </Row>
         </Card>
-
-        {filters.line !== "M" && filters.officer !== "All" && (
-          <Card bordered={false} className="fade-in" style={cardStyle}>
-            <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-              {filteredLines.filter(l => l !== "All").map(lineCode => (
-                <Col xs={8} sm={4} md={4} key={lineCode}>
-                  <Button
-                    type={filters.line === lineCode ? "primary" : "default"}
-                    onClick={() => setFilters(prev => ({ ...prev, line: lineCode, month: "All" }))}
-                    style={{
-                      width: "100%",
-                      background: filters.line === lineCode ? "#1890ff" : "#000",
-                      color: "#fff",
-                      borderColor: "#333"
-                    }}
-                  >
-                    {lineCode}
-                  </Button>
-                </Col>
-              ))}
-            </Row>
-          </Card>
-        )}
-
-        {selectedLineDetails && (
-          <Card size="small" style={{ backgroundColor: "#001529", color: "#fff", marginBottom: 12 }}>
-            <p><strong>Line Code:</strong> {selectedLineDetails.code}</p>
-            <p><strong>Line No:</strong> {selectedLineDetails.line}</p>
-            <p><strong>Officer:</strong> {selectedLineDetails.officer}</p>
-          </Card>
-        )}
 
         {loading && <p style={{ color: "white" }}>Loading suppliers...</p>}
         {error && <p style={{ color: "red" }}>Error: {error}</p>}
@@ -125,6 +205,8 @@ const Suppliers = () => {
               columns={columns}
               dataSource={suppliers.map((s, index) => ({ ...s, key: index }))}
               pagination={{ pageSize: 5 }}
+              bordered
+              scroll={{ x: "max-content" }}
             />
           </Card>
         )}

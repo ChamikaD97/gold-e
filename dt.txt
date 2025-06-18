@@ -21,13 +21,18 @@ spec
 
 bike
 
-	head light
-	break light
-	parking light
-	turn light
+head light
+break light
+parking light
+urn light
 side mirrors
 main stand
 side stand
+
+kick start
+self start
+
+
 transmission
 fuel tank lit
 reserve
@@ -40,8 +45,7 @@ engine condition
 oil levels
 break levels
 air filter
-kick start
-self start
+
 horn
 spockets
 chains

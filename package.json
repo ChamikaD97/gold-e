@@ -1,6 +1,8 @@
 {
+  
   "name": "GoldE-Tea Admin Panel",
   "version": "0.1.0",
+  "proxy": "http://newserver:46597",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.14.0",
