@@ -82,10 +82,10 @@ const Suppliers = () => {
       );
     })
     .map((s, index) => ({ ...s, key: index }));
-const paginatedData = filteredData.slice(
-  (currentPage - 1) * pageSize,
-  currentPage * pageSize
-);
+  const paginatedData = filteredData.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   const columns = [
     {
@@ -258,7 +258,7 @@ const paginatedData = filteredData.slice(
                 className="sup-bordered-table"
                 columns={columns}
                 dataSource={paginatedData}
-pagination={false}
+                pagination={false}
                 scroll={{ x: "max-content" }}
                 bordered
               />

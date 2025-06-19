@@ -4,20 +4,14 @@ import {
   Tooltip,
 } from "antd";
 import { MinusCircleFilled, PlusCircleFilled, ReloadOutlined } from "@ant-design/icons";
-import leaf_collection_data from "./data/leaf_collection_data.json";
 import '../App.css'; // Import your CSS file here
-import { getSuppliersMarkedXOnDate } from "./utils/dashboardMetrics";
-import { setNotificationDate, setLeafRound } from "../redux/commonDataSlice";
-import lineIdCodeMap from "../data/lineIdCodeMap.json";
-
 import { Input } from "antd";
-
 import CircularLoader from "../components/CircularLoader";
-
 import { useDispatch, useSelector } from "react-redux";
 import SupplierLeafModal from "../components/SupplierLeafModal";
+import { API_KEY, BASE_URL, getMonthDateRangeFromParts } from "../api/api";
+import lineIdCodeMap from "../data/lineIdCodeMap.json";
 import { hideLoader, showLoader } from "../redux/loaderSlice";
-import { API_KEY, getMonthDateRangeFromParts } from "../api/api";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -29,16 +23,23 @@ const LeafCountChart = () => {
   const [tableData, setTableData] = useState([]);
   const officerLineMap = useSelector((state) => state.officerLine?.officerLineMap || {});
   const monthMap = useSelector((state) => state.commonData?.monthMap);
-  const allLines = useSelector(state => state.officerLine.allLines || []);
-  const { isLoading } = useSelector((state) => state.loader);
   const [modalOpen, setModalOpen] = useState(false);
-
   const [suppliersMarkedTomorrow, setSuppliersMarkedTomorrow] = useState([]);
   const notificationDate = useSelector((state) => state.commonData?.notificationDate);
   const dispatch = useDispatch()
   const [selectedSupplierId, setSelectedSupplierId] = useState(null);
   const [selectedDate, setSelectedDate] = useState("2025-06-01");
   const [error, setError] = useState(null);
+
+
+
+  const uniqueLines = [
+    { label: "All", value: "All" },
+    ...lineIdCodeMap
+      .filter(l => l.lineCode && l.lineId)
+      .map(l => ({ label: l.lineCode, value: l.lineId }))
+  ];
+
 
 
   const getLeafRecordsByRoutes = async () => {
@@ -72,11 +73,11 @@ const LeafCountChart = () => {
       console.log(transformedData[0]);
 
 
-    //  setData(Array.isArray(transformedData) ? transformedData : transformedData ? [transformedData] : []);
+      setData(Array.isArray(transformedData) ? transformedData : transformedData ? [transformedData] : []);
     } catch (err) {
       console.error(err);
       setError("Failed to load supplier data");
-    //  setData([]);
+      setData([]);
     } finally {
       dispatch?.(hideLoader());
 
@@ -85,27 +86,16 @@ const LeafCountChart = () => {
 
 
   useEffect(() => {
+    console.log(filters);
 
-    setData(leaf_collection_data);
+    if (filters.line !== "All") {
+      console.log(filters);
 
-  }, []);
-
-
-
-
-  useEffect(() => {
-    getLeafRecordsByRoutes();
-
+      getLeafRecordsByRoutes();
+    } else {
+      setData([]);
+    }
   }, [filters.month]);
-
-
-
-
-
-
-
-
-
 
 
 
@@ -128,23 +118,7 @@ const LeafCountChart = () => {
   }, [filteredData]);
 
 
-  const lineIdToCodeMap = useMemo(() => {
-    const map = {};
-    lineIdCodeMap.forEach(item => {
-      map[item.lineId] = item.lineCode;
-    });
-    return map;
-  }, []);
-
-  const uniqueLines = [
-    { label: "All", value: "All" },
-    ...lineIdCodeMap
-      .filter(l => l.lineCode && l.lineId)
-      .map(l => ({ label: l.lineCode, value: l.lineId }))
-  ];
-
   function getSupplierListMarkedXOnDate(data) {
-
 
     const tomorrowDateStr = new Date();
     tomorrowDateStr.setDate(tomorrowDateStr.getDate() + 6);
@@ -175,10 +149,6 @@ const LeafCountChart = () => {
     return result;
   }
 
-  useEffect(() => {
-    console.log(filters);
-
-  }, [filters.line, filters.month, filters.year])
   useEffect(() => {
     if (filters.month !== "All") {
       const daysInMonth = new Date(parseInt(filters.year), parseInt(filters.month), 0).getDate();
@@ -356,6 +326,7 @@ const LeafCountChart = () => {
         onClose={() => setModalOpen(false)}
         supplierId={selectedSupplierId}
         selectedDate={selectedDate}
+        filters={filters}
       />
 
       <div style={{ flex: "0 0 auto", marginBottom: 16 }}>
@@ -412,7 +383,7 @@ const LeafCountChart = () => {
                   }
                 >
                   {uniqueLines.map(line => (
-                    <Option key={line.value} value={line.label}>
+                    <Option key={line.value} value={line.value}>
                       {line.label}
                     </Option>
                   ))}
@@ -564,7 +535,7 @@ const LeafCountChart = () => {
             )}
             <Card bordered={false} className="d-in" style={cardStyle}>
               <Table
-                className="red-bordered-table"
+                className="sup-bordered-table"
                 columns={columns}
                 dataSource={filteredTableData}
                 pagination={false}

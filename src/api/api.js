@@ -2,8 +2,8 @@ import { useDispatch } from "react-redux";
 import { hideLoader, showLoader } from "../redux/loaderSlice";
 
 // api.js
-const BASE_URL = "http://newserver:46597/quiX/ControllerV1";
-const API_KEY = "quix717244";
+export const BASE_URL = "http://newserver:46597/quiX/ControllerV1";
+export const API_KEY = "quix717244";
 const buildQueryParams = (params) =>
   Object.entries(params)
     .filter(([_, v]) => v !== undefined && v !== "" && v !== null)
@@ -61,7 +61,7 @@ export const getAllSuppliers = async ({ dispatch } = {}) => {
 };
 
 export const getSuppliersByRoute = async ({ filters, dispatch } = {}) => {
-console.log(filters);
+  console.log(filters);
 
   dispatch?.(showLoader());
 
@@ -125,7 +125,7 @@ export const getLeafRecordsByRoutes = async ({ dateRange, routeNos, headings, di
     k: API_KEY,
     d: dateRange,      // e.g. "2024-06-01~2024-06-30"
     r: routeNos,       // optional
-    h: headings        // e.g. "1,2,4,8"
+    h: '1,2,3,4,5,6,7,8,9,10'        // e.g. "1,2,4,8"
   };
   const url = `${BASE_URL}/glfdata?${buildQueryParams(query)}`;
   const response = await fetch(url);
@@ -135,15 +135,38 @@ export const getLeafRecordsByRoutes = async ({ dateRange, routeNos, headings, di
   return response.json();
 };
 
-export const getLeafRecordsBySupplierId = async ({ dateRange, headings, supplierId, dispatch } = {}) => {
+
+
+export const getMonthDateRangeFromParts = (year, month) => {
+  const yearNum = Number(year);
+  const monthNum = Number(month);
+
+  const firstDate = new Date(yearNum, monthNum - 1, 1);
+  const lastDate = new Date(yearNum, monthNum, 0); // still valid, just format carefully
+
+  const formatDate = (date) => {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  return `${formatDate(firstDate)}~${formatDate(lastDate)}`;
+};
+
+
+export const getLeafRecordsBySupplierId = async ({ filters, supplierId, dispatch } = {}) => {
+  console.log('getLeafRecordsBySupplierId............');
 
   dispatch?.(showLoader());
   const query = {
     k: API_KEY,
-    d: dateRange,      // e.g. "2024-06-01~2024-06-30"
+    d: '2025-05-06',
+    h: '1,2,3,4,5,6,7,8,9,10'    ,   // e.g. "2024-06-01~2024-06-30"
     s: supplierId,      // optional
-    h: headings       // e.g. "1,2,4,8"
   };
+
+
   const url = `${BASE_URL}/glfdata?${buildQueryParams(query)}`;
   const response = await fetch(url);
   if (!response.ok) throw new Error("Failed to fetch leaf records");

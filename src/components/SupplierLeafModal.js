@@ -1,20 +1,25 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Calendar, Spin, Alert } from "antd";
+import { Modal, Calendar, Spin, Alert, Card } from "antd";
 import dayjs from "dayjs";
-import { getLeafRecordsBySupplierId } from "../api/api";
+import CircularLoader from "../components/CircularLoader";
+
+import { API_KEY, getMonthDateRangeFromParts } from "../api/api";
 
 // Simulated API call (replace with actual import)
 
 
-const SupplierLeafModal = ({ open, onClose, selectedDate, supplierId }) => {
+const SupplierLeafModal = ({ open, onClose, filters, selectedDate, supplierId }) => {
     const [leafData, setLeafData] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [supplierLeafData, setSupplierLeafData] = useState([]);
+
     const [error, setError] = useState(null);
+
 
     useEffect(() => {
         if (open && supplierId) {
             setLoading(true);
-            getLeafRecordsBySupplierId(supplierId)
+            getLeafRecordsBySupplierId({ filters, supplierId })
                 .then((data) => {
                     setLeafData(data || []);
                     setError(null);
@@ -39,6 +44,38 @@ const SupplierLeafModal = ({ open, onClose, selectedDate, supplierId }) => {
             </ul>
         ) : null;
     };
+    const cardStyle = {
+        background: "rgba(0, 0, 0, 0.6)",
+        color: "#fff",
+        borderRadius: 12,
+        marginBottom: 6
+    };
+
+
+    const getLeafRecordsBySupplierId = async ({ filters, supplierId }) => {
+        const baseUrl = "/quiX/ControllerV1/glfdata";
+        const range = getMonthDateRangeFromParts(filters.year, filters.month);
+        console.log(range);
+
+        const params = new URLSearchParams({ k: API_KEY, s: supplierId, d: '2025-05-06' });
+        const url = `${baseUrl}?${params.toString()}`;
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Failed to fetch supplier leaf data");
+            const data = await response.json();
+            setSupplierLeafData(Array.isArray(data) ? data : data ? [data] : []);
+        } catch (err) {
+            console.error(err);
+            setError("Failed to load supplier data");
+            setSupplierLeafData([]);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <Modal
@@ -48,17 +85,21 @@ const SupplierLeafModal = ({ open, onClose, selectedDate, supplierId }) => {
             footer={null}
             width={900}
         >
-            {loading ? (
-                <Spin tip="Loading..." />
-            ) : error ? (
-                <Alert type="error" message={error} />
-            ) : (
-                <Calendar
-                    fullscreen={false}
-                    defaultValue={dayjs(selectedDate)}
-                    dateCellRender={dateCellRender}
-                />
-            )}
+            <Card bordered={false} style={{ ...cardStyle }}>
+                {loading ? (
+                    <CircularLoader />
+                ) : error ? (
+                    <Alert type="error" message={error} />
+                ) : (
+                    <Calendar
+                        fullscreen={false}
+                        defaultValue={dayjs(selectedDate)}
+                        dateCellRender={dateCellRender}
+                    />
+                )}
+
+            </Card>
+
         </Modal>
     );
 };
