@@ -24,7 +24,7 @@ const { Text } = Typography;
 
 const LeafCountChart = () => {
   const [data, setData] = useState([]);
-  const [filters, setFilters] = useState({ year: "2025", month: "All", officer: "All", line: "All" });
+  const [filters, setFilters] = useState({ year: "2025", month: "All", officer: "All", line: "All", lineCode: '' });
   const [columns, setColumns] = useState([]);
   const [tableData, setTableData] = useState([]);
   const officerLineMap = useSelector((state) => state.officerLine?.officerLineMap || {});
@@ -43,18 +43,16 @@ const LeafCountChart = () => {
 
   const getLeafRecordsByRoutes = async () => {
     dispatch?.(showLoader());
-    console.log(filters);
-
     const dateRange = getMonthDateRangeFromParts(filters.year, filters.month)
     const baseUrl = "/quiX/ControllerV1/glfdata";
     const params = new URLSearchParams({
       k: API_KEY, r: filters.line, d: dateRange     // e.g. "2024-06-01~2024-06-30"
     });
     const url = `${baseUrl}?${params.toString()}`;
-
     setError(null);
 
     try {
+
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch supplier data");
       const data = await response.json();
@@ -66,17 +64,15 @@ const LeafCountChart = () => {
         leaf_type: item["Leaf Type"] ? 'Super' : 'Normal',
         supplier_id: item["Supplier Id"],
         date: item["Leaf Date"],
-        net_kg: item["Net"],
-        line: item["Route"]
+        net_kg: parseInt(item["Net"]),
+        lineCode: parseInt(item["Route"]),
+
       }));
-      console.log(transformedData[0]);
-
-
-    //  setData(Array.isArray(transformedData) ? transformedData : transformedData ? [transformedData] : []);
+      setData(transformedData);
+      setColData(transformedData)
     } catch (err) {
-      console.error(err);
       setError("Failed to load supplier data");
-    //  setData([]);
+      setData([]);
     } finally {
       dispatch?.(hideLoader());
 
@@ -84,18 +80,19 @@ const LeafCountChart = () => {
   };
 
 
-  useEffect(() => {
+  // useEffect(() => {
+  //   console.log(filteredTableData);
 
-    setData(leaf_collection_data);
+  //   // setData(leaf_collection_data);
+  //   console.log(filteredTableData);
 
-  }, []);
+  // }, []);
 
 
 
 
   useEffect(() => {
     getLeafRecordsByRoutes();
-
   }, [filters.month]);
 
 
@@ -115,10 +112,16 @@ const LeafCountChart = () => {
     setModalOpen(true);
   };
   const filteredData = useMemo(() => {
-    let result = data.filter(d => d.date.startsWith(filters.year));
+    console.log('............................');
+
+    let result = Array.isArray(data) ? data.filter(d => d.date.startsWith(filters.year)) : [];
+    console.log('result  1  ', result.length);
+
     if (filters.month !== "All") result = result.filter(d => d.date.slice(5, 7) === filters.month);
     if (filters.officer !== "All") result = result.filter(d => (officerLineMap[filters.officer] || []).includes(d.line));
     if (filters.line !== "All") result = result.filter(d => d.line === filters.line);
+    console.log('result  2', result.length);
+
     return result;
   }, [data, filters]);
 
@@ -175,24 +178,26 @@ const LeafCountChart = () => {
     return result;
   }
 
-  useEffect(() => {
-    console.log(filters);
 
-  }, [filters.line, filters.month, filters.year])
-  useEffect(() => {
+  const setColData = (transformedData) => {
     if (filters.month !== "All") {
       const daysInMonth = new Date(parseInt(filters.year), parseInt(filters.month), 0).getDate();
 
       // 1. Build supplier => highlight date map
-      const allLineSuppliers = data
-        .filter(item => item.line === filters.line)
+      console.log('transformedData', transformedData.length);
+      console.log(transformedData[0], filters);
+
+      const allLineSuppliers = transformedData
+        .filter(item => item.line === parseInt(filters.lineCode))
         .map(item => item.supplier_id);
+
+      console.log('allLineSuppliers', allLineSuppliers.length);
 
       const suppliers = Array.from(new Set(allLineSuppliers)).sort();
 
       const highlightDateMap = {};
       suppliers.forEach(supplierId => {
-        const supplierRecords = data.filter(item => item.supplier_id === supplierId);
+        const supplierRecords = transformedData.filter(item => item.supplier_id === supplierId);
         if (supplierRecords.length > 0) {
           const lastDate = new Date(Math.max(...supplierRecords.map(item => new Date(item.date))));
           const nextDate = new Date(lastDate);
@@ -261,9 +266,11 @@ const LeafCountChart = () => {
         };
       });
 
-
+      console.log('suppliers', suppliers.length);
       // 3. Build row data
       const dataSource = suppliers.map(supplierId => {
+        console.log(supplierId);
+
         const row = { supplier_id: supplierId };
         const records = filteredData.filter(item => item.supplier_id === supplierId);
         records.forEach(item => {
@@ -315,7 +322,150 @@ const LeafCountChart = () => {
       setColumns([]);
       setTableData([]);
     }
-  }, [filteredData, filters.month, 6]);
+  }
+
+
+  // useEffect(() => {
+  //   if (filters.month !== "All") {
+  //     const daysInMonth = new Date(parseInt(filters.year), parseInt(filters.month), 0).getDate();
+
+  //     // 1. Build supplier => highlight date map
+
+  //     const allLineSuppliers = data
+  //       .filter(item => item.line === filters.line)
+  //       .map(item => item.supplier_id);
+  //     console.log('allLineSuppliers', allLineSuppliers.length);
+
+  //     const suppliers = Array.from(new Set(allLineSuppliers)).sort();
+
+  //     const highlightDateMap = {};
+  //     suppliers.forEach(supplierId => {
+  //       const supplierRecords = data.filter(item => item.supplier_id === supplierId);
+  //       if (supplierRecords.length > 0) {
+  //         const lastDate = new Date(Math.max(...supplierRecords.map(item => new Date(item.date))));
+  //         const nextDate = new Date(lastDate);
+  //         nextDate.setDate(nextDate.getDate() + 6);
+  //         highlightDateMap[supplierId] = nextDate.toDateString();
+  //       }
+  //     });
+
+
+  //     const today = new Date();
+  //     const todayYear = today.getFullYear();
+  //     const todayMonth = String(today.getMonth() + 1).padStart(2, "0");
+  //     const todayDate = today.getDate();
+
+  //     const dayCols = Array.from({ length: daysInMonth }, (_, i) => {
+  //       const day = i + 1;
+  //       const dayKey = `day_${day}`;
+
+  //       const isTodayCol =
+  //         todayYear === parseInt(filters.year) &&
+  //         todayMonth === filters.month &&
+  //         todayDate === day;
+
+  //       return {
+  //         title: `${day}`, // keep title simple, no styling here
+  //         dataIndex: dayKey,
+  //         key: dayKey,
+  //         align: "center",
+  //         width: 80,
+  //         className: isTodayCol ? "highlight-column" : "", // ✅ assign custom class
+  //         render: (value, row) => {
+  //           const supplierId = row.supplier_id;
+  //           const cellDate = new Date(`${filters.year}-${filters.month}-${String(day).padStart(2, "0")}`);
+  //           const isHighlight = highlightDateMap[supplierId] === cellDate.toDateString();
+
+  //           let bgColor = "";
+  //           let fontColor = "";
+  //           if (isHighlight) {
+  //             bgColor = "#AA0114"; // red
+  //             fontColor = '#fff'; // white
+  //           } else if (value?.type === "Super") {
+  //             bgColor = "#FF9900"; // gold
+
+  //             fontColor = '#000'; // white
+  //           } else if (value?.type === "Normal") {
+  //             bgColor = "#003366"; // sky blue
+  //             fontColor = '#fff'; // white
+  //           }
+
+  //           return (
+  //             <div
+  //               className={isHighlight ? "pulse-red animated-cell" : "animated-cell"}
+  //               style={{
+  //                 backgroundColor: bgColor,
+  //                 color: fontColor,
+  //                 fontWeight: "bold",
+  //                 padding: "4px",
+  //                 borderRadius: "4px"
+  //               }}
+  //             >
+  //               {isHighlight ? "X" : value?.kg || ""}
+  //             </div>
+
+  //           );
+  //         }
+  //       };
+  //     });
+
+  //     console.log('suppliers', suppliers.length);
+  //     // 3. Build row data
+  //     const dataSource = suppliers.map(supplierId => {
+  //       console.log(supplierId);
+
+  //       const row = { supplier_id: supplierId };
+  //       const records = filteredData.filter(item => item.supplier_id === supplierId);
+  //       records.forEach(item => {
+  //         const day = new Date(item.date).getDate();
+  //         row[`day_${day}`] = {
+  //           type: item.leaf_type,
+  //           kg: item.net_kg
+  //         };
+  //       });
+  //       return row;
+  //     });
+
+  //     setColumns([
+  //       {
+  //         title: "Supplier ID",
+  //         dataIndex: "supplier_id",
+  //         key: "supplier_id",
+  //         fixed: "left",
+  //         align: "center",
+  //         width: 120,
+  //         render: (text, record) => (
+  //           <Button
+  //             style={{
+  //               backgroundColor: "#006623",
+  //               color: "#fff", // optional: to ensure text is visible on dark background
+  //               border: "none", fontSize: 15, fontWeight: "500",
+  //             }}
+  //             onClick={() => handleSupplierClick(record)}
+  //           >
+  //             {text}
+  //           </Button>
+
+  //         )
+
+  //       },
+  //       ...dayCols
+  //     ]);
+
+
+  //     setTableData(dataSource);
+
+
+  //     // Call your function with current filtered data
+  //     const markedTomorrow = getSupplierListMarkedXOnDate(filteredData);
+  //     setSuppliersMarkedTomorrow(markedTomorrow);
+
+
+  //   } else {
+  //     setColumns([]);
+  //     setTableData([]);
+  //   }
+  // }, [filteredData, filters.month]);
 
 
   const filteredLines = filters.officer === "All" ? [] : ["All", ...(officerLineMap[filters.officer] || [])];
@@ -346,6 +496,7 @@ const LeafCountChart = () => {
   const filteredTableData = tableData.filter(item =>
     (!filters.supplierId || item.supplier_id.startsWith(filters.supplierId))
   );
+  console.log(filteredTableData.length);
 
 
   return (
@@ -382,17 +533,21 @@ const LeafCountChart = () => {
                   placeholder="Select Line"
                   value={filters.line}
                   onChange={val => {
+                    const selectedLine = uniqueLines.find(line => line.value === val);
                     const officerMatch = Object.entries(officerLineMap).find(
                       ([officer, lines]) => lines.includes(val)
                     );
                     const matchedOfficer = officerMatch ? officerMatch[0] : "All";
+
                     setFilters(f => ({
                       ...f,
                       line: val,
+                      lineCode: selectedLine?.value || "", // or selectedLine?.label if needed
                       officer: matchedOfficer,
                       month: "All"
                     }));
                   }}
+
                   style={{
                     width: "100%",
                     backgroundColor: "rgba(0, 0, 0, 0.6)",
@@ -412,8 +567,8 @@ const LeafCountChart = () => {
                   }
                 >
                   {uniqueLines.map(line => (
-                    <Option key={line.value} value={line.label}>
-                      {line.label}
+                    <Option key={line.value} value={line.value}>
+                      {line.label}-{line.value}
                     </Option>
                   ))}
                 </Select>
