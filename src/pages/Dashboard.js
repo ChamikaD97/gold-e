@@ -77,7 +77,7 @@ const Dashboard = () => {
     dispatch(showLoader())
     dispatch(setAchievements(achievementsData));
     dispatch(setDailyLeafCount(leaf_collection_data));
-    setData(leaf_collection_data);
+    //  setData(leaf_collection_data);
   }, []);
 
   useEffect(() => {
@@ -90,7 +90,7 @@ const Dashboard = () => {
       });
       setRatios(getLeafTypeRatio(data));
       setTopSuppliers(getTopSuppliers(data));
-      setNewSuppliers(getNewSuppliersThisMonth(data));
+      //setNewSuppliers(getNewSuppliersThisMonth(data));
       setLineTotals(getLineWiseTotals(data));
       setLatestAchievementByOfficer(getPreviousMonthSummaryByOfficer(achievements))
     }

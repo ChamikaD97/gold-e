@@ -1,20 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Calendar, Spin, Alert, Card } from "antd";
+import { Modal, Calendar, Alert, Card, Button } from "antd";
 import dayjs from "dayjs";
 import CircularLoader from "../components/CircularLoader";
-
 import { API_KEY, getMonthDateRangeFromParts } from "../api/api";
-
-// Simulated API call (replace with actual import)
-
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { useSelector } from "react-redux";
 
 const SupplierLeafModal = ({ open, onClose, filters, selectedDate, supplierId }) => {
     const [leafData, setLeafData] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [supplierLeafData, setSupplierLeafData] = useState([]);
-
     const [error, setError] = useState(null);
-
 
     useEffect(() => {
         if (open && supplierId) {
@@ -24,84 +20,252 @@ const SupplierLeafModal = ({ open, onClose, filters, selectedDate, supplierId })
                     setLeafData(data || []);
                     setError(null);
                 })
-                .catch((err) => {
+                .catch(() => {
                     setError("Failed to fetch leaf records.");
+                    setLeafData([]);
                 })
                 .finally(() => setLoading(false));
         }
     }, [supplierId, open]);
 
-    const dateCellRender = (value) => {
-        const dateStr = value.format("YYYY-MM-DD");
-        const records = leafData.filter((d) => d.date === dateStr);
-        return records.length ? (
-            <ul style={{ padding: 0, margin: 0, listStyle: "none" }}>
-                {records.map((item, idx) => (
-                    <li key={idx} style={{ fontSize: 12 }}>
-                        {item.leaf_type}: {item.net_kg} kg
-                    </li>
-                ))}
-            </ul>
-        ) : null;
-    };
-    const cardStyle = {
-        background: "rgba(0, 0, 0, 0.6)",
-        color: "#fff",
-        borderRadius: 12,
-        marginBottom: 6
-    };
-
-
     const getLeafRecordsBySupplierId = async ({ filters, supplierId }) => {
-        console.log('getLeafRecordsBySupplierId called with filters:', filters, 'and supplierId:', supplierId);
-        
         const baseUrl = "/quiX/ControllerV1/glfdata";
         const range = getMonthDateRangeFromParts(filters.year, filters.month);
-        console.log(range);
-
         const params = new URLSearchParams({ k: API_KEY, s: supplierId, d: range });
         const url = `${baseUrl}?${params.toString()}`;
 
-        setLoading(true);
-        setError(null);
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Fetch failed");
+        const data = await response.json();
+        return Array.isArray(data) ? data : data ? [data] : [];
+    };
 
-        try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error("Failed to fetch supplier leaf data");
-            const data = await response.json();
-            setSupplierLeafData(Array.isArray(data) ? data : data ? [data] : []);
-        } catch (err) {
-            console.error(err);
-            setError("Failed to load supplier data");
-            setSupplierLeafData([]);
-        } finally {
-            setLoading(false);
+    const dateCellRender = (value) => {
+        const dateStr = value.format("YYYY-MM-DD");
+        const records = leafData.filter((r) => r["Leaf Date"] === dateStr);
+        if (!records.length) return null;
+
+        return (
+            <ul style={{ padding: 0, margin: 0, listStyle: "none" }}>
+                {records.map((item, idx) => {
+                    const type = item["Leaf Type"] === 2 ? "Super" : "Normal";
+                    const bgColor = type === "Super" ? "#FF9900" : "#003366";
+                    const color = type === "Super" ? "#000" : "#fff";
+                    return (
+                        <li
+                            key={idx}
+                            style={{
+                                backgroundColor: bgColor,
+                                color,
+                                fontSize: 12,
+                                marginBottom: 2,
+                                padding: "2px 6px",
+                                borderRadius: 6,
+                                textAlign: "center",
+                            }}
+                        >
+                            {item["Net"]} kg
+                        </li>
+                    );
+                })}
+            </ul>
+        );
+    };
+
+    const totalKg = leafData.reduce((sum, item) => sum + parseFloat(item["Net"] || 0), 0).toFixed(2);
+
+    const downloadLeafDataAsPDF = (print = false) => {
+        const today = new Date().toLocaleDateString();
+        const selectedLine = filters.lineCode || "All";
+        const doc = new jsPDF();
+        const title = `Supplier Leaf Report - ${dayjs(selectedDate).format("MMMM YYYY")}`;
+        const tableData = leafData.map((record) => [
+            record["Leaf Date"],
+            record["Leaf Type"] === 2 ? "Super" : "Normal",
+            `${record["Net"]} kg`,
+        ]);
+
+        doc.setFontSize(14);
+        doc.setTextColor(0);
+        doc.line(14, 20, 196, 20);
+        doc.setFont(undefined, 'bold');
+        doc.text("GREEN HOUSE PLANTATION (PVT) LIMITED", 105, 28, { align: "center" });
+
+        doc.setFontSize(9);
+        doc.line(14, 32, 196, 32);
+        doc.setFont(undefined, 'normal');
+        doc.text("Factory: Panakaduwa, No: 40, Rotumba, Bandaranayakapura", 14, 40);
+        doc.text("Email: gtgreenhouse9@gmail.com | Tele: +94 77 2004609", 14, 45);
+
+        doc.setFontSize(11);
+
+        doc.setFontSize(10);
+
+
+
+        doc.text(`Date: ${today}    |    Line: ${selectedLine}`, 14, 63);
+
+
+
+
+
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        doc.text("Monthly Leaf Supply Summary", 14, 52);
+
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        doc.text(`Supplier: ${supplierId}`, 14, 58);
+        doc.setFont(undefined, 'normal');
+
+        doc.line(14, 66, 196, 66);
+
+        autoTable(doc, {
+            startY: 72,
+            head: [["Date", "Type", "Net KG"]],
+            body: tableData,
+            styles: {
+                fillColor: [255, 255, 255],
+                textColor: [0, 0, 0],
+                fontSize: 9,
+                halign: 'center',
+                lineColor: [0, 0, 0],
+                lineWidth: 0.1
+            },
+            headStyles: {
+                fillColor: [255, 255, 255],
+                textColor: [0, 0, 0],
+                fontStyle: 'bold',
+                lineColor: [0, 0, 0],
+                lineWidth: 0.2
+            },
+            alternateRowStyles: { fillColor: [240, 240, 240] },
+            tableLineColor: [0, 0, 0],
+            tableLineWidth: 0.1,
+            didDrawPage: function () {
+                // Footer
+                doc.setFontSize(8);
+                doc.setTextColor(50);
+                doc.line(14, 275, 196, 275);
+                doc.setFont(undefined, 'normal');
+                doc.text("Green House Plantation SLMS | DA Engineer | ACD Jayasinghe", 14, 280);
+                doc.text("0718553224 | deshjayasingha@gmail.com", 14, 285);
+
+                // Page number
+                const page = doc.internal.getNumberOfPages();
+                doc.setFontSize(8);
+                doc.text(`Page ${page}`, 190, 290, { align: 'right' });
+            }
+        });
+
+        doc.text(`Total Supplied: ${totalKg} kg`, 14, doc.lastAutoTable.finalY + 10);
+
+        doc.setFontSize(9);
+        doc.line(14, 275, 196, 275);
+
+
+        const filename = `Leaf_Supplier_${supplierId}_${filters.year}_${filters.month}.pdf`;
+
+        if (print) {
+            doc.autoPrint();
+            const blob = doc.output("blob");
+            const blobUrl = URL.createObjectURL(blob);
+            window.open(blobUrl);
+        } else {
+            doc.save(filename);
         }
     };
 
     return (
         <Modal
-            title={`Leaf Records for Supplier ${supplierId}`}
             open={open}
             onCancel={onClose}
-            footer={null}
+
+            footer={[
+                <Button
+                    key="pdf"
+                    type="primary"
+                    onClick={() => downloadLeafDataAsPDF(false)}
+                    style={{ backgroundColor: "#007bff", borderRadius: 6 }}
+                >
+                    Download PDF
+                </Button>,
+                <Button
+                    key="print"
+                    onClick={() => downloadLeafDataAsPDF(true)}
+                    style={{ backgroundColor: "#28a745", color: "#fff", borderRadius: 6 }}
+                >
+                    Print PDF
+                </Button>,
+                <Button
+                    key="close"
+                    danger
+                    onClick={onClose}
+                    style={{ borderRadius: 6 }}
+                >
+                    Close
+                </Button>,
+            ]}
+            bodyStyle={{
+                backgroundColor: "#1e1e1e",
+                color: "#fff",
+                padding: 20,
+                borderRadius: 8,
+            }}
+            style={{ top: 60, borderRadius: 12, overflow: "hidden" }}
             width={900}
         >
-            <Card bordered={false} style={{ ...cardStyle }}>
+            <div
+                style={{
+                    marginBottom: 20,
+                    padding: 12,
+                    background: "#2b2b2b",
+                    borderRadius: 8,
+                    textAlign: "center",
+                    color: "#fff",
+                    fontWeight: "500",
+                    fontSize: 16,
+                    border: "1px solid #444",
+                }}
+            >
+                {`Leaf Supply of  ${supplierId}  in  ${dayjs(selectedDate).format("MMMM YYYY")}`}
+            </div>
+
+            <Card bordered={false} style={{ backgroundColor: "#2a2a2a", borderRadius: 10 }}>
                 {loading ? (
                     <CircularLoader />
                 ) : error ? (
                     <Alert type="error" message={error} />
                 ) : (
-                    <Calendar
-                        fullscreen={false}
-                        defaultValue={dayjs(selectedDate)}
-                        dateCellRender={dateCellRender}
-                    />
+                    <>
+
+
+                        <Calendar
+                            fullscreen={false}
+                            defaultValue={dayjs(selectedDate)}
+                            dateCellRender={dateCellRender}
+                        />
+
+                        <div
+                            style={{
+                                marginTop: 20,
+                                padding: 12,
+                                background: "#2b2b2b",
+                                borderRadius: 8,
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                color: "#fff",
+                                fontSize: 16,
+                                border: "1px solid #444"
+                            }}
+                        >
+                            <span>Total Supplied:</span>
+                            <span>{totalKg} kg</span>
+                        </div>
+                    </>
                 )}
-
             </Card>
-
         </Modal>
     );
 };

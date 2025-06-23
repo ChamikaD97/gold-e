@@ -7,6 +7,7 @@ import { ReloadOutlined } from "@ant-design/icons";
 import lineIdCodeMap from "../data/lineIdCodeMap.json";
 import CircularLoader from "../components/CircularLoader";
 import { Pagination } from "antd"; // ✅ make sure to import this
+import { SearchOffRounded, SearchRounded } from "@mui/icons-material";
 
 const Suppliers = () => {
   const { Option } = Select;
@@ -177,66 +178,87 @@ const Suppliers = () => {
     <div style={{ height: "100%", display: "flex", flexDirection: "column", padding: 16 }}>
       <div style={{ flex: "0 0 auto", marginBottom: 16 }} className="fade-in">
         <Card bordered={false} style={cardStyle}>
-          <Row gutter={[16, 16]}>
-            <Col md={1}>
-              <Button
-                icon={<ReloadOutlined />}
-                danger
-                type="primary"
-                block
-                onClick={() => setFilters({ year: "2024", month: "All", line: "All", search: "" })}
-              />
+          <Row justify="space-between" gutter={[16, 16]}>
+            {/* Left Side: Reload + Line Filter */}
+            <Col span={12}>
+              <Row gutter={[8, 8]}>
+                <Col md={4}>
+                  <Button
+                    icon={<ReloadOutlined />}
+                    danger
+                    type="primary"
+                    block
+                    onClick={() => setFilters({ year: "2024", month: "All", line: "All", search: "" })}
+                  />
+                </Col>
+                <Col md={8}>
+                  <Select
+                    showSearch
+                    className="line-select"
+                    placeholder="Select Line"
+                    value={filters.line}
+                    onChange={val => setFilters(prev => ({ ...prev, line: val }))}
+                    style={{
+                      width: "100%",
+                      backgroundColor: "rgba(0, 0, 0, 0.6)",
+                      color: "#fff",
+                      border: "1px solid #333",
+                      borderRadius: 6
+                    }}
+                    dropdownStyle={{ backgroundColor: "rgba(0, 0, 0, 0.9)" }}
+                    bordered={false}
+                    optionFilterProp="children"
+                    filterOption={(input, option) =>
+                      option.children.toLowerCase().includes(input.toLowerCase())
+                    }
+                  >
+                    {uniqueLines.map(line => (
+                      <Option key={line.value} value={line.value}>
+                        {line.label}
+                      </Option>
+                    ))}
+                  </Select>
+                </Col>
+              </Row>
             </Col>
-            <Col md={2}>
-              <Select
-                showSearch
-                className="line-select"
-                placeholder="Select Line"
-                value={filters.line}
-                onChange={val => setFilters(prev => ({ ...prev, line: val }))}
-                style={{
-                  width: "100%",
-                  backgroundColor: "rgba(0, 0, 0, 0.6)",
-                  color: "#fff",
-                  border: "1px solid #333",
-                  borderRadius: 6
-                }}
-                dropdownStyle={{ backgroundColor: "rgba(0, 0, 0, 0.9)" }}
-                bordered={false}
-                optionFilterProp="children"
-                filterOption={(input, option) =>
-                  option.children.toLowerCase().includes(input.toLowerCase())
-                }
-              >
-                {uniqueLines.map(line => (
-                  <Option key={line.value} value={line.value}>
-                    {line.label}
-                  </Option>
-                ))}
-              </Select>
-            </Col>
-            <Col md={2}>
-              <Text style={{ color: "#fff", paddingTop: 6 }}>Search Supplier</Text>
-            </Col>
-            <Col md={6}>
-              <Input
-                className="custom-supplier-input"
-                value={filters.search}
-                onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, search: e.target.value }))
-                }
-                placeholder="Search by ID or Name"
-                style={{
-                  width: "100%",
-                  backgroundColor: "rgb(0, 0, 0)",
-                  color: "#fff",
-                  border: "1px solid #333",
-                  borderRadius: 6
-                }}
-                allowClear
-              />
+
+            {/* Right Side: Search */}
+            <Col span={12}>
+              <Row gutter={[8, 8]} justify="end">
+                <Col md={6}>
+                  <Text style={{ color: "#fff", paddingTop: 6, display: "inline-block" }}>
+                    Search Supplier
+                  </Text>
+                </Col>
+                <Col md={8}>
+                  <Input
+                    className="custom-supplier-input"
+                    value={filters.search}
+                 
+                    placeholder="Search by ID or Name"
+                    style={{
+                      width: "100%",
+                      backgroundColor: "rgb(0, 0, 0)",
+                      color: "#fff",
+                      border: "1px solid #333",
+                      borderRadius: 6
+                    }}
+                    allowClear
+                  />
+                </Col>
+                <Col md={2}>
+                  <Button
+                    icon={<SearchRounded />}
+                    
+                    type="primary"
+                    block
+                    onClick={() => setFilters({ year: "2024", month: "All", line: "All", search: "" })}
+                  />
+                </Col>
+              </Row>
             </Col>
           </Row>
+
         </Card>
 
         {loading && <CircularLoader />}

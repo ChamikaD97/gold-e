@@ -18,6 +18,7 @@
   cursor: pointer;
 }
 
+
 /* White text for selected value */
 .ant-select-selection-item {
   color: #fff !important;
