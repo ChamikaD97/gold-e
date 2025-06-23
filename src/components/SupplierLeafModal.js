@@ -53,11 +53,13 @@ const SupplierLeafModal = ({ open, onClose, filters, selectedDate, supplierId })
 
 
     const getLeafRecordsBySupplierId = async ({ filters, supplierId }) => {
+        console.log('getLeafRecordsBySupplierId called with filters:', filters, 'and supplierId:', supplierId);
+        
         const baseUrl = "/quiX/ControllerV1/glfdata";
         const range = getMonthDateRangeFromParts(filters.year, filters.month);
         console.log(range);
 
-        const params = new URLSearchParams({ k: API_KEY, s: supplierId, d: '2025-05-06' });
+        const params = new URLSearchParams({ k: API_KEY, s: supplierId, d: range });
         const url = `${baseUrl}?${params.toString()}`;
 
         setLoading(true);

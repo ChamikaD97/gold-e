@@ -108,7 +108,7 @@ const LeafCountChart = () => {
     let result = data.filter(d => d.date.startsWith(filters.year));
     if (filters.month !== "All") result = result.filter(d => d.date.slice(5, 7) === filters.month);
     if (filters.officer !== "All") result = result.filter(d => (officerLineMap[filters.officer] || []).includes(d.line));
-    if (filters.line !== "All") result = result.filter(d => d.line === filters.line);
+    if (filters.line !== "All") result = result.filter(d => d.line === filters.lineCode);
     return result;
   }, [data, filters]);
 

@@ -70,6 +70,28 @@ const LeafCountChart = () => {
     setSelectedDate(record.date || "2025-06-01");
     setModalOpen(true);
   };
+  const getSuppliersMarkedXToday = () => {
+    const today = new Date().toDateString();
+
+    const supplierMap = {};
+    data.forEach(item => {
+      supplierMap[item.supplier_id] = [...(supplierMap[item.supplier_id] || []), item];
+    });
+
+    const result = [];
+    for (const [supplierId, records] of Object.entries(supplierMap)) {
+      const lastDate = new Date(Math.max(...records.map(r => new Date(r.date))));
+      const nextDate = new Date(lastDate);
+      nextDate.setDate(nextDate.getDate() + 6);
+
+      if (nextDate.toDateString() === today) {
+        result.push(supplierId);
+      }
+    }
+
+    console.log("✅ Suppliers with X today:", result);
+    return result;
+  };
 
   const getSupplierListMarkedXOnDate = (data) => {
     const tomorrow = new Date();
@@ -215,6 +237,11 @@ const LeafCountChart = () => {
         <Row gutter={[16, 16]}>
           <Col md={1}>
             <Button icon={<ReloadOutlined />} danger type="primary" block onClick={() => setFilters({ year: "2025", month: "All", officer: "All", line: "All", lineCode: "" })} />
+          </Col>
+          <Col>
+            <Button type="default" onClick={getSuppliersMarkedXToday}>
+              Log Today's X-Marked Suppliers
+            </Button>
           </Col>
           <Col md={2}>
             <Select
