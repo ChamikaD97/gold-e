@@ -8,8 +8,8 @@ const initialState = {
     "01": "January", "02": "February", "03": "March", "04": "April",
     "05": "May", "06": "June", "07": "July", "08": "August",
     "09": "September", "10": "October", "11": "November", "12": "December"
-  }
-
+  },
+  selectedSupplier: [],
 };
 
 const commonDataSlice = createSlice({
@@ -30,9 +30,12 @@ const commonDataSlice = createSlice({
         "05": "May", "06": "June", "07": "July", "08": "August",
         "09": "September", "10": "October", "11": "November", "12": "December"
       };
-    }
+    },
+    setSelectedSupplier: (state, action) => {
+      state.selectedSupplier = action.payload; // Set selected supplier
+    },
   }
 });
 
-export const { setNotificationDate, setRange6DaysMarkers,setLeafRound, clearMarkers } = commonDataSlice.actions;
+export const { setNotificationDate, setRange6DaysMarkers, setLeafRound, clearMarkers, setSelectedSupplier } = commonDataSlice.actions;
 export default commonDataSlice.reducer;

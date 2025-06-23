@@ -49,48 +49,48 @@ export function getMonthlyAchievementsForSupplier(data, supplierId) {
 
   return result;
 }
-export function getSupplierSummaryByDateRange(data, supplierId, startDate, endDate) {
-  if (!Array.isArray(data) || !supplierId || !startDate || !endDate) return null;
+// export function getSupplierSummaryByDateRange(data, supplierId, startDate, endDate) {
+//   if (!Array.isArray(data) || !supplierId || !startDate || !endDate) return null;
 
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  console.log(startDate, endDate); // 👈 Debugging line to check the output
-  console.log(data); // 👈 Debugging line to check the output
-  console.log(supplierId); // 👈 Debugging line to check the output
-
-
-
-  const filtered = data.filter(entry => {
-    return (
-      entry.supplier_id === supplierId &&
-      new Date(entry.date) >= start && new Date(entry.date) <= end
-    );
-  });
-
-  // Initialize totals
-  let superTotal = 0;
-  let normalTotal = 0;
-
-  filtered.forEach(entry => {
-    const { leaf_type, net_kg } = entry;
-    const amount = parseFloat(net_kg || 0);
-
-    if (leaf_type === "Super") {
-      superTotal += amount;
-    } else if (leaf_type === "Normal") {
-      normalTotal += amount;
-    }
-  });
+//   const start = new Date(startDate);
+//   const end = new Date(endDate);
+//   console.log(startDate, endDate); // 👈 Debugging line to check the output
+//   console.log(data); // 👈 Debugging line to check the output
+//   console.log(supplierId); // 👈 Debugging line to check the output
 
 
-  const res = {
-    filteredData: filtered,
-    superLeafTotalNetKg: parseFloat(superTotal.toFixed(2)),
-    normalLeafTotalNetKg: parseFloat(normalTotal.toFixed(2))
-  }
 
-  return res;
-}
+//   const filtered = data.filter(entry => {
+//     return (
+//       entry.supplier_id === supplierId &&
+//       new Date(entry.date) >= start && new Date(entry.date) <= end
+//     );
+//   });
+
+//   // Initialize totals
+//   let superTotal = 0;
+//   let normalTotal = 0;
+
+//   filtered.forEach(entry => {
+//     const { leaf_type, net_kg } = entry;
+//     const amount = parseFloat(net_kg || 0);
+
+//     if (leaf_type === "Super") {
+//       superTotal += amount;
+//     } else if (leaf_type === "Normal") {
+//       normalTotal += amount;
+//     }
+//   });
+
+
+//   const res = {
+//     filteredData: filtered,
+//     superLeafTotalNetKg: parseFloat(superTotal.toFixed(2)),
+//     normalLeafTotalNetKg: parseFloat(normalTotal.toFixed(2))
+//   }
+
+//   return res;
+// }
 
 
 export function getPreviousMonthSummaryByOfficer(data) {

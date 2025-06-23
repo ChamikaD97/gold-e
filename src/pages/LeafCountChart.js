@@ -586,9 +586,9 @@ const LeafCountChart = () => {
             </Col>
             <Col md={4}>
               <Select showSearch
-                              style={{ width: "100%", backgroundColor: "rgba(0, 0, 0, 0.6)", color: "#000", border: "1px solid #333", borderRadius: 6 }}
+                style={{ width: "100%", backgroundColor: "rgba(0, 0, 0, 0.6)", color: "#000", border: "1px solid #333", borderRadius: 6 }}
 
-                value={filters.year} 
+                value={filters.year}
                 bordered={false} onChange={val => setFilters(f => ({ ...f, year: val, month: "Select Month" }))}>
 
                 <Option value="2021">2021</Option>
@@ -599,7 +599,7 @@ const LeafCountChart = () => {
                 <Option value="2025">2025</Option>
               </Select>
             </Col>
-            <Col md={3}>
+            <Col md={4}>
               <Select
                 showSearch
 
@@ -613,7 +613,7 @@ const LeafCountChart = () => {
                 ))}
               </Select>
             </Col>
-            <Col md={2}><Text style={{ color: "#fff" }}>Supplier ID</Text></Col>
+            <Col md={3}><Text style={{ color: "#fff" }}>Supplier ID</Text></Col>
             <Col md={4}>
               <Input
                 value={filters.supplierId || ""}
@@ -622,10 +622,12 @@ const LeafCountChart = () => {
                 allowClear
               />
             </Col>
-            <Col>
-              <Button type="default" onClick={getSuppliersMarkedXToday}>
-                Today  Suppliers
-              </Button>
+            <Col md={4}>
+              {filters.month === currentMonth && filters.year == currentYear && (
+                <Button type="default" onClick={getSuppliersMarkedXToday}>
+                  Today Suppliers
+                </Button>
+              )}
             </Col>
           </Row>
         </Card>

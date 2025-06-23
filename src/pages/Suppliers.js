@@ -1,28 +1,40 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Card, Col, Row, Button, Table,
-  Select, Typography, Input
+  Select, Typography, Input,
+  Modal, Descriptions,
+  Tag
 } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import lineIdCodeMap from "../data/lineIdCodeMap.json";
 import CircularLoader from "../components/CircularLoader";
 import { Pagination } from "antd"; // ✅ make sure to import this
 import { SearchOffRounded, SearchRounded } from "@mui/icons-material";
+import { useDispatch } from "react-redux";
+import { setSelectedSupplier } from "../redux/commonDataSlice";
+import { useNavigate } from "react-router-dom";
 
 const Suppliers = () => {
   const { Option } = Select;
   const { Text } = Typography;
+  const dispatch = useDispatch();
 
   const [filters, setFilters] = useState({
     year: "2024",
     month: "All",
     line: "All",
-    search: ""
+    search: "", searchById: "",
   });
 
   const [suppliers, setSuppliers] = useState([]);
+  const [singleSupplier, setSingleSupplier] = useState([]);
+
+  const navigate = useNavigate();
+
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showSingleModel, setShowSingleModel] = useState(false);
 
   const apiKey = "quix717244";
 
@@ -46,6 +58,37 @@ const Suppliers = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+
+
+  const fetchSupplierDataFromId = async (supplierId) => {
+
+    const baseUrl = "/quiX/ControllerV1/supdata";
+    const params = new URLSearchParams({ k: apiKey, s: supplierId });
+    const url = `${baseUrl}?${params.toString()}`;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to fetch supplier data");
+      const data = await response.json();
+      setSingleSupplier(Array.isArray(data) ? data[0] : data[0] ? [data] : []);
+      console.log("Single Supplier Data:", data[0]);
+
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load supplier data");
+      setSingleSupplier([]);
+    } finally {
+      setLoading(false);
+      dispatch(setSelectedSupplier(singleSupplier));
+      navigate(`/supplier/${supplierId}`); // or filters.searchById if that's your input
+    }
+
+
   };
 
   const lineIdToCodeMap = useMemo(() => {
@@ -230,11 +273,14 @@ const Suppliers = () => {
                     Search Supplier
                   </Text>
                 </Col>
+
+
                 <Col md={8}>
                   <Input
                     className="custom-supplier-input"
-                    value={filters.search}
-                 
+                    value={filters.searchById}
+                    onChange={(e) => setFilters(prev => ({ ...prev, searchById: e.target.value }))}
+
                     placeholder="Search by ID or Name"
                     style={{
                       width: "100%",
@@ -249,10 +295,12 @@ const Suppliers = () => {
                 <Col md={2}>
                   <Button
                     icon={<SearchRounded />}
-                    
+
                     type="primary"
                     block
-                    onClick={() => setFilters({ year: "2024", month: "All", line: "All", search: "" })}
+                    onClick={() => {
+                      fetchSupplierDataFromId(filters.searchById);
+                    }}
                   />
                 </Col>
               </Row>
@@ -260,6 +308,47 @@ const Suppliers = () => {
           </Row>
 
         </Card>
+
+        <Modal
+          open={showSingleModel}
+          onCancel={() => setShowSingleModel(false)}
+          footer={null}
+          title="🧾 Supplier Profile"
+          style={{ top: 80 }}
+          width={600}
+        >
+          {singleSupplier ? (
+            <Descriptions
+              bordered
+              column={1}
+              size="small"
+              labelStyle={{ fontWeight: "bold", width: 200 }}
+              contentStyle={{ backgroundColor: "#fefefe" }}
+            >
+              <Descriptions.Item label="Supplier ID">{singleSupplier["Supplier Id"]}</Descriptions.Item>
+              <Descriptions.Item label="Name">{singleSupplier["Supplier Name"]}</Descriptions.Item>
+              <Descriptions.Item label="Route">
+                <Tag color="blue">{lineIdToCodeMap[singleSupplier["Route"]] || singleSupplier["Route"]}</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Pay Category">
+                <Tag color={
+                  singleSupplier["Pay"] === 1 ? "green" :
+                    singleSupplier["Pay"] === 2 ? "gold" : "volcano"
+                }>
+                  Type {singleSupplier["Pay"]}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Bank">{singleSupplier["Bank"]}</Descriptions.Item>
+              <Descriptions.Item label="Bank A/C">{singleSupplier["Bank AC"]}</Descriptions.Item>
+              <Descriptions.Item label="NIC">{singleSupplier["NIC"]}</Descriptions.Item>
+              <Descriptions.Item label="Contact">{singleSupplier["Contact"]}</Descriptions.Item>
+              <Descriptions.Item label="Joined Date">{singleSupplier["Joined Date"]}</Descriptions.Item>
+            </Descriptions>
+          ) : (
+            <p>No supplier found.</p>
+          )}
+        </Modal>
+
 
         {loading && <CircularLoader />}
         {error && <p style={{ color: "red" }}>Error: {error}</p>}

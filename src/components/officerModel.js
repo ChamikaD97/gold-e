@@ -13,9 +13,7 @@ import {
   Select,
 } from "antd";
 import { TeamOutlined, RollbackOutlined } from "@ant-design/icons";
-import {
-  getSupplierSummaryByDateRange,
-} from "../pages/utils/dashboardMetrics";
+
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
@@ -71,12 +69,7 @@ const OfficerModal = ({
         ? `${selectedYear}-12-31`
         : new Date(selectedYear, parseInt(selectedMonth), 0).toISOString().slice(0, 10);
 
-    const summary = getSupplierSummaryByDateRange(
-      dailyLeafCount,
-      selectedSupplier.supplierId,
-      fromDate,
-      toDate
-    );
+    const summary =[]
 
     setDailyCountSummeryBySupplierId(summary);
   }, [selectedSupplier, selectedYear, selectedMonth, dailyLeafCount]);
