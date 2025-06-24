@@ -23,7 +23,8 @@ const Suppliers = () => {
     year: "2024",
     month: "All",
     line: "All",
-    search: "", searchById: "",
+    search: "",
+    searchById: "",
   });
 
   const [suppliers, setSuppliers] = useState([]);
@@ -60,8 +61,6 @@ const Suppliers = () => {
     }
   };
 
-
-
   const fetchSupplierDataFromId = async (supplierId) => {
 
     const baseUrl = "/quiX/ControllerV1/supdata";
@@ -76,7 +75,6 @@ const Suppliers = () => {
       if (!response.ok) throw new Error("Failed to fetch supplier data");
       const data = await response.json();
       setSingleSupplier(Array.isArray(data) ? data[0] : data[0] ? [data] : []);
-      console.log("Single Supplier Data:", data[0]);
 
     } catch (err) {
       console.error(err);
@@ -126,6 +124,7 @@ const Suppliers = () => {
       );
     })
     .map((s, index) => ({ ...s, key: index }));
+
   const paginatedData = filteredData.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
@@ -136,6 +135,8 @@ const Suppliers = () => {
       title: "Supplier ID",
       dataIndex: "Supplier Id",
       key: "supplierId",
+      fixed: "left",             // ✅ make it fixed
+      width: 130,                // ✅ width is required when using fixed
       sorter: (a, b) => a["Supplier Id"].localeCompare(b["Supplier Id"]),
       render: (text) => (
         <Button
@@ -151,10 +152,12 @@ const Suppliers = () => {
         </Button>
       )
     },
-    {
+
+  {
       title: "Name",
       dataIndex: "Supplier Name",
       key: "supplierName",
+      sorter: (a, b) => a["Supplier Name"]?.localeCompare(b["Supplier Name"]),
       filterSearch: true,
       render: (text) => <div style={{ fontWeight: "normal", color: "#fff" }}>{text}</div>,
       filters: [...new Set(suppliers.map(s => s["Supplier Name"]))]
@@ -165,15 +168,21 @@ const Suppliers = () => {
       title: "Route",
       dataIndex: "Route",
       key: "route",
+      sorter: (a, b) => {
+        const routeA = lineIdToCodeMap[a.Route] || a.Route;
+        const routeB = lineIdToCodeMap[b.Route] || b.Route;
+        return routeA.localeCompare(routeB);
+      },
       render: (value) => lineIdToCodeMap[value] || value,
       filters: [...new Set(suppliers.map(s => s.Route))]
         .map(r => ({ text: lineIdToCodeMap[r] || r, value: r })),
       onFilter: (value, record) => record.Route === value
     },
     {
-      title: "Pay Category",
+      title: "Payemnt",
       dataIndex: "Pay",
       key: "pay",
+      sorter: (a, b) => a.Pay - b.Pay,
       filters: [
         { text: "Type 1", value: 1 },
         { text: "Type 2", value: 2 },
@@ -184,31 +193,36 @@ const Suppliers = () => {
     {
       title: "Bank",
       dataIndex: "Bank",
-      key: "bank"
+      key: "bank",
+      sorter: (a, b) => a.Bank?.localeCompare(b.Bank)
     },
     {
       title: "Bank A/C",
       dataIndex: "Bank AC",
-      key: "bankAc"
+      key: "bankAc",
+      sorter: (a, b) => a["Bank AC"]?.localeCompare(b["Bank AC"])
     },
     {
       title: "NIC",
       dataIndex: "NIC",
-      key: "nic"
+      key: "nic",
+      sorter: (a, b) => a.NIC?.localeCompare(b.NIC)
     },
     {
       title: "Contact",
       dataIndex: "Contact",
-      key: "contact"
+      key: "contact",
+      sorter: (a, b) => a.Contact?.localeCompare(b.Contact)
     },
     {
       title: "Joined Date",
       dataIndex: "Joined Date",
       key: "joinedDate",
       sorter: (a, b) =>
-        new Date(a["Joined Date"]) - new Date(b["Joined Date"])
+        new Date(a["Joined Date"] || 0) - new Date(b["Joined Date"] || 0)
     }
   ];
+
 
   const cardStyle = {
     background: "rgba(0, 0, 0, 0.6)",
@@ -225,7 +239,7 @@ const Suppliers = () => {
             {/* Left Side: Reload + Line Filter */}
             <Col span={12}>
               <Row gutter={[8, 8]}>
-                <Col md={4}>
+                <Col md={2}>
                   <Button
                     icon={<ReloadOutlined />}
                     danger
@@ -278,8 +292,8 @@ const Suppliers = () => {
                 <Col md={8}>
                   <Input
                     className="custom-supplier-input"
-                    value={filters.searchById}
-                    onChange={(e) => setFilters(prev => ({ ...prev, searchById: e.target.value }))}
+                    value={filters.search}
+                    onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
 
                     placeholder="Search by ID or Name"
                     style={{
@@ -370,7 +384,7 @@ const Suppliers = () => {
                 columns={columns}
                 dataSource={paginatedData}
                 pagination={false}
-                scroll={{ x: "max-content" }}
+                scroll={{ y: 400 }} // ✅ this makes the header sticky
                 bordered
               />
             </div>
@@ -380,7 +394,7 @@ const Suppliers = () => {
                 pageSize={pageSize}
                 total={filteredData.length}
                 showSizeChanger
-                pageSizeOptions={["5", "10", "15", "20"]}
+                pageSizeOptions={["5", "10", "15", "20", "50", "100"]}
                 showTotal={(total, range) => `${range[0]}–${range[1]} of ${total} suppliers`}
                 onChange={(page, size) => {
                   setCurrentPage(page);

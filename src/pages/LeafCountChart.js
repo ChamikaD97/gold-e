@@ -673,11 +673,12 @@ const LeafSupply = () => {
                 columns={columns}
                 dataSource={filteredTableData}
                 pagination={false}
-                scroll={{ x: "max-content" }}
+                scroll={{ x: "max-content", y: 400 }} // ✅ vertical scroll to fix header
                 bordered
                 size="small"
                 rowKey="supplier_id"
               />
+
             )}
           </Card>
         </>
