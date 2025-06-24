@@ -1,116 +1,76 @@
-import React, { useMemo, useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Card,
   Typography,
-  Row, Input,
+  Row,
+  Input,
   Col,
   DatePicker,
   Button,
-  Tag,
+  Table,
+  message
 } from "antd";
-import { useParams } from "react-router-dom";
-import CircularLoader from "../components/CircularLoader";
-import { useSelector } from "react-redux";
-import dayjs from "dayjs";
 import { SearchRounded } from "@mui/icons-material";
+import dayjs from "dayjs";
+import CircularLoader from "../components/CircularLoader";
 import lineIdCodeMap from "../data/lineIdCodeMap.json";
+import bankIdCodes from "../data/bankIdCodes.json";
+import { API_KEY } from "../api/api";
+import { hideLoader, showLoader } from "../redux/loaderSlice";
+import { useDispatch, useSelector } from "react-redux";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { RangePicker } = DatePicker;
 
 const SupplierInfo = () => {
-
-
-  const [supplier, setSupplier] = useState();
+  const [supplier, setSupplier] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [dateRange, setDateRange] = useState([]);
+  const [dateRange, setDateRange] = useState([
+    dayjs().startOf("month"),
+    dayjs()
+  ]);
   const [filters, setFilters] = useState({
-    year: "2024",
-    month: "All",
-    line: "All",
-    search: "", searchById: "",
+    searchById: "",
   });
+  const [data, setData] = useState([]);
+  const dispatch = useDispatch();
+  const leafRound = useSelector((state) => state.commonData?.leafRound);
   const apiKey = "quix717244";
 
-  const asddsa = ((id) => {
-    const map = {};
-    console.log(id);
+  const [totals, setTotals] = useState({ super: 0, normal: 0 });
 
-    lineIdCodeMap.map(item => {
-      console.log(item);
+  const fetchSupplierDataFromId = async (supId) => {
+    const id = supId?.toString().padStart(5, "0").trim();
 
-    });
-    return map;
-  }, []);
+    if (!id || id.length !== 5) {
+      message.warning("⚠️ Please enter a valid 5-digit Supplier ID");
+      return;
+    }
 
-  const lineIdToCodeMap = (id) => {
-
-
-    const records = lineIdCodeMap.filter(item => parseInt(item.lineId) === id);
-
-
-
-    return (records[0]?.lineCode);
-
-
-
-
-
-
-
-  }
-
-
-  // const getLeafRecordsById= async () => {
-  //   dispatch(showLoader());
-  //   const baseUrl = "/quiX/ControllerV1/supdata";
-  //   console.log(dateRange);
-
-  //   const params = new URLSearchParams({ k: apiKey, s: supplierId , d : dateRange });
-  //   const url = `${baseUrl}?${params.toString()}`;
-  //   setError(null);
-
-  //   try {
-  //     const response = await fetch(url);
-  //     if (!response.ok) throw new Error("Failed to fetch supplier data");
-  //     const result = await response.json();
-
-  //     const transformed = result.map(item => ({
-  //       leaf_type: item["Leaf Type"] === 2 ? "Super" : "Normal",
-  //       supplier_id: item["Supplier Id"],
-  //       date: item["Leaf Date"],
-  //       net_kg: parseInt(item["Net"]),
-  //       lineCode: parseInt(item["Route"]),
-  //       line: filters.lineCode
-  //     }));
-
-  //     setData(transformed);
-  //     setColData(transformed);
-  //   } catch (err) {
-  //     setError("Failed to load supplier data");
-  //     setData([]);
-  //   } finally {
-  //     dispatch(hideLoader());
-  //   }
-  // };
-  const fetchSupplierDataFromId = async (id) => {
     setSupplier(null);
-    const baseUrl = "/quiX/ControllerV1/supdata";
-    const params = new URLSearchParams({ k: apiKey, s: id });
-    const url = `${baseUrl}?${params.toString()}`;
-
+    setData([]);
+    const url = `/quiX/ControllerV1/supdata?k=${apiKey}&s=${id}`;
     setLoading(true);
-    setError(null);
 
     try {
       const response = await fetch(url);
+
       if (!response.ok) throw new Error("Failed to fetch supplier data");
-      const data = await response.json();
-      setSupplier(Array.isArray(data) ? data[0] : data);
+
+      const result = await response.json();
+      const supplierData = Array.isArray(result) ? result[0] : result;
+
+      if (supplierData) {
+        setSupplier(supplierData);
+        message.success(`✅ Supplier ID ${id} loaded successfully`);
+      } else {
+        console.log('********************');
+
+        message.warning(`⚠️ No supplier data found for ID ${id}`);
+      }
     } catch (err) {
       console.error(err);
-      setError("Failed to load supplier data");
+      message.error("❌ Failed to load supplier data");
       setSupplier(null);
     } finally {
       setLoading(false);
@@ -118,13 +78,78 @@ const SupplierInfo = () => {
   };
 
 
-  const handleLeafDataSearch = () => {
-    if (dateRange.length === 2) {
-      const [from, to] = dateRange;
-      console.log("Fetch leaf data from", from.format("YYYY-MM-DD"), "to", to.format("YYYY-MM-DD"));
-      // You can call the actual fetch function here
+
+
+
+  const lineIdToCodeMap = (id) => {
+    const record = lineIdCodeMap.find(item => parseInt(item.lineId) === id);
+    return record?.lineCode || "Unknown";
+  };
+
+  const bankIdToCode = (id) => {
+    const record = bankIdCodes.find(item => parseInt(item.Bank) === id);
+    return record?.Name || "Unknown";
+  };
+
+  const getLeafRecordsByDates = async (supId, range) => {
+    const id = supId?.toString().padStart(5, "0").trim();
+    const formattedDates = range.map(date => dayjs(date).format("YYYY-MM-DD"));
+    const dd = `${formattedDates[0]}~${formattedDates[1]}`;
+    const url = `/quiX/ControllerV1/glfdata?k=${API_KEY}&s=${id}&d=${dd}`;
+
+    dispatch(showLoader());
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to fetch leaf records");
+
+      const result = await response.json();
+
+      const transformed = result.map(item => ({
+        supplier_id: item["Supplier Id"],
+        date: item["Leaf Date"],
+        leaf_type: item["Leaf Type"] === 2 ? "Super" : "Normal",
+        lineCode: parseInt(item["Route"]),
+        net_kg: parseFloat(item["Net"]),
+        gross_weight: parseFloat(item["Gross Weight"]),
+        full_weight: parseFloat(item["Full Weight"]),
+        bag_count: parseFloat(item["Bag Count"]),
+        bag_weight: parseFloat(item["Bag Weight"]),
+        trp_add: parseFloat(item["TrpAdd"]),
+        trp_ded: parseFloat(item["TrpDed"]),
+        total_ded: parseFloat(item["Total Ded"]),
+      }));
+
+      // ✅ Calculate total Normal and Super leaf net_kg
+      const totals = transformed.reduce(
+        (acc, item) => {
+          if (item.leaf_type === "Super") acc.super += item.net_kg;
+          else acc.normal += item.net_kg;
+          return acc;
+        },
+        { super: 0, normal: 0 }
+      );
+      const calculatedTotals = transformed.reduce(
+        (acc, item) => {
+          if (item.leaf_type === "Super") acc.super += item.net_kg;
+          else acc.normal += item.net_kg;
+          return acc;
+        },
+        { super: 0, normal: 0 }
+      );
+      setTotals(calculatedTotals);
+
+      console.log("Super Total:", totals.super.toFixed(2), "Normal Total:", totals.normal.toFixed(2));
+
+      setData(transformed);
+    } catch (err) {
+      console.error(err);
+      message.error("❌ Failed to load leaf records");
+      setData([]);
+    } finally {
+      dispatch(hideLoader());
     }
   };
+
 
   const cardStyle = {
     background: "rgba(0, 0, 0, 0.65)",
@@ -138,135 +163,130 @@ const SupplierInfo = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      {/* 🔍 Top Card: Search Supplier */}
-
-
-      <Row gutter={[8, 8]} justify="space-evenly">
-        <Col md={8}>
+      {/* Search Bar */}
+      <Row gutter={[8, 8]} justify="center">
+        <Col md={12}>
           <Card bordered={false} style={cardStyle}>
-            <Col md={24}>
-
-              <Row gutter={[8, 8]} justify="space-evenly">                <Col md={6}>
-                <Text style={{ color: "#fff", paddingTop: 3, display: "inline-block" }}>
-                  Search
-                </Text>
+            <Row gutter={[8, 8]} align="middle">
+              <Col flex="60px">
+                <Text style={{ color: "#fff" }}>Search</Text>
               </Col>
-                <Col md={14}>
-                  <Input
-                    className="custom-supplier-input"
-                    value={filters.searchById}
-                    onChange={(e) =>
-                      setFilters((prev) => ({ ...prev, searchById: e.target.value }))
-                    }
-                    placeholder="Search by ID or Name"
-                    style={{
-                      width: "100%",
-                      backgroundColor: "rgb(0, 0, 0)",
-                      color: "#fff",
-                      border: "1px solid #333",
-                      borderRadius: 6
-                    }}
-                    allowClear
-                  />
-                </Col>
-                <Col md={4}>
-                  <Button
-                    icon={<SearchRounded />}
-                    type="primary"
-                    block
-                    onClick={() => {
-                      fetchSupplierDataFromId(filters.searchById);
-                    }}
-                  />
-                </Col>
-              </Row>
-            </Col>
+              <Col flex="auto">
+                <Input
+                  value={filters.searchById}
+                  onChange={(e) =>
+                    setFilters((prev) => ({ ...prev, searchById: e.target.value }))
+                  }
+                  onPressEnter={() => fetchSupplierDataFromId(filters.searchById)}
+                  placeholder="Search by ID or Name"
+                  style={{
+                    width: "100%",
+                    backgroundColor: "rgb(0, 0, 0)",
+                    color: "#fff",
+                    border: "1px solid #333",
+                    borderRadius: 6,
+                  }}
+                  allowClear
+                />
+              </Col>
+              <Col flex="60px">
+                <Button
+                  icon={<SearchRounded />}
+                  type="primary"
+                  onClick={() => fetchSupplierDataFromId(filters.searchById)}
+                />
+              </Col>
+            </Row>
           </Card>
-
         </Col>
-
-
-
-
-
-
       </Row>
 
-      {supplier && (
-        <Row gutter={[8, 8]} justify="space-evenly">
-
-          < Col md={12}>
-            <Card bordered={false} style={cardStyle}>
-              <Col md={24}>
-
-                <Row gutter={[8, 8]} justify="space-evenly">
-                  <Col md={6} >
-                    {supplier["Supplier Id"]}
-                  </Col>
-
-                  <Col md={4}>
-                  {lineIdToCodeMap(supplier["Route"])}
-
-                  </Col> <Col md={14}>
-                    {supplier["Supplier Name"]}
-                  </Col>
-                </Row>
-              </Col>
-            </Card>
-
-          </Col>
-          < Col md={12}>
-            <Card bordered={false} style={cardStyle}>
-              <Col md={24}>
-
-                <Row gutter={[8, 8]} justify="space-evenly">
-                  <Col md={6} >
-                    {supplier["Supplier Id"]}
-                  </Col>
-
-                  <Col md={4}>
-                   
-                  </Col> <Col md={14}>
-                    {supplier["Supplier Name"]}
-                  </Col>
-                </Row>
-              </Col>
-            </Card>
-
-          </Col>
-        </Row>
-      )}
-
+      {/* Supplier Info */}
       {supplier && (
         <>
-
-
-          <Row gutter={[16, 16]} justify="space-between">
-            <Col span={12}>
+          <Row gutter={[16, 8]} justify="space-evenly">
+            <Col md={3}>
               <Card bordered={false} style={cardStyle}>
-                <Row>
-                  <Col span={6}><Text style={labelStyle}>Bank:</Text></Col>
-                  <Col span={18}><Text style={valueStyle}>{supplier["Bank"]}</Text></Col>
-                </Row>
-                <Row>
-                  <Col span={6}><Text style={labelStyle}>Bank A/C:</Text></Col>
-                  <Col span={18}><Text style={valueStyle}>{supplier["Bank AC"]}</Text></Col>
-                </Row>
-                <Row>
-                  <Col span={6}><Text style={labelStyle}>NIC:</Text></Col>
-                  <Col span={18}><Text style={valueStyle}>{supplier["NIC"]}</Text></Col>
-                </Row>
-                <Row>
-                  <Col span={6}><Text style={labelStyle}>Contact:</Text></Col>
-                  <Col span={18}><Text style={valueStyle}>{supplier["Contact"]}</Text></Col>
-                </Row>
-                <Row>
-                  <Col span={6}><Text style={labelStyle}>Joined Date:</Text></Col>
-                  <Col span={18}><Text style={valueStyle}>{supplier["Joined Date"]}</Text></Col>
-                </Row>
-              </Card></Col>
+                <Text style={labelStyle}>Id</Text>
+                <div style={{ display: "flex", justifyContent: "end" }}>
+                  <Text style={valueStyle}>{supplier["Supplier Id"]}</Text>
+                </div>
+              </Card>
+            </Col>
+            <Col md={3}>
+              <Card bordered={false} style={cardStyle}>
+                <Text style={labelStyle}>Line</Text>
+                <div style={{ display: "flex", justifyContent: "end" }}>
+                  <Text style={valueStyle}>{lineIdToCodeMap(supplier["Route"])}</Text>
+                </div>
+              </Card>
+            </Col>
+            <Col md={6}>
+              <Card bordered={false} style={cardStyle}>
+                <Text style={labelStyle}>Supplier Name</Text>
+                <div style={{ display: "flex", justifyContent: "end" }}>
+                  <Text style={valueStyle}>{supplier["Supplier Name"]}</Text>
+                </div>
+              </Card>
+            </Col>
+            <Col md={4}>
+              <Card bordered={false} style={cardStyle}>
+                <Text style={labelStyle}>NIC</Text>
+                <div style={{ display: "flex", justifyContent: "end" }}>
+                  <Text style={valueStyle}>{supplier["NIC"]}</Text>
+                </div>
+              </Card>
+            </Col>
+            <Col md={4}>
+              <Card bordered={false} style={cardStyle}>
+                <Text style={labelStyle}>Contact</Text>
+                <div style={{ display: "flex", justifyContent: "end" }}>
+                  <Text style={valueStyle}>{supplier["Contact"]}</Text>
+                </div>
+              </Card>
+            </Col>
+            <Col md={4}>
+              <Card bordered={false} style={cardStyle}>
+                <Text style={labelStyle}>Joined Date</Text>
+                <div style={{ display: "flex", justifyContent: "end" }}>
+                  <Text style={valueStyle}>{dayjs(supplier["Joined Date"]).format("YYYY-MM-DD")}</Text>
+                </div>
+              </Card>
+            </Col>
+          </Row>
 
-            <Col span={12}>
+          {supplier["Pay"] === 2 && (
+            <Row gutter={[16, 8]} style={{ marginTop: 16 }}>
+              <Col md={8}>
+                <Card bordered={false} style={cardStyle}>
+                  <Text style={labelStyle}>Bank</Text>
+                  <div style={{ display: "flex", justifyContent: "center" }}>
+                    <Text style={valueStyle}>{bankIdToCode(supplier["Bank"])}</Text>
+                  </div>
+                </Card>
+              </Col>
+              <Col md={8}>
+                <Card bordered={false} style={cardStyle}>
+                  <Text style={labelStyle}>Bank A/C</Text>
+                  <div style={{ display: "flex", justifyContent: "center" }}>
+                    <Text style={valueStyle}>{supplier["Bank AC"]}</Text>
+                  </div>
+                </Card>
+              </Col>
+              <Col md={8}>
+                <Card bordered={false} style={cardStyle}>
+                  <Text style={labelStyle}>Pay Mode</Text>
+                  <div style={{ display: "flex", justifyContent: "center" }}>
+                    <Text style={valueStyle}>{supplier["Pay"] === 1 ? "Cash" : "Bank"}</Text>
+                  </div>
+                </Card>
+              </Col>
+            </Row>
+          )}
+
+          {/* Date Range Picker */}
+          <Row style={{ marginTop: 24 }}>
+            <Col span={24}>
               <Card bordered={false} style={cardStyle}>
                 <Text style={{ color: "#ccc" }}>Select From - To Dates</Text>
                 <RangePicker
@@ -279,7 +299,11 @@ const SupplierInfo = () => {
                   type="primary"
                   block
                   style={{ marginTop: 16 }}
-                  // onClick={getLeafRecordsById}
+                  onClick={() => {
+                    if (dateRange.length === 2) {
+                      getLeafRecordsByDates(filters.searchById, dateRange);
+                    }
+                  }}
                   disabled={dateRange.length !== 2}
                 >
                   Get Leaf Records
@@ -287,23 +311,78 @@ const SupplierInfo = () => {
               </Card>
             </Col>
           </Row>
-
-
-
         </>
-      )
-      }
+      )}
 
-      {
-        loading && (
+      {/* Leaf Data Table */}
+     {supplier && data.length > 0 && (
+  <Row style={{ marginTop: 24 }}>
+    <Col span={24}>
+      <Card bordered={false} style={cardStyle}>
+        {/* Summary Header */}
+        <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
+          <Col>
+            <Text style={{ color: "#ccc", fontSize: 18, fontWeight: 600 }}>
+              📄 Leaf Records Summary
+            </Text>
+            <div>
+              <Text style={{ color: "#bbb", fontSize: 15 }}>
+                📅 Date Range:&nbsp;
+                <strong>{dayjs(dateRange[0]).format("YYYY-MM-DD")}</strong> to&nbsp;
+                <strong>{dayjs(dateRange[1]).format("YYYY-MM-DD")}</strong>
+              </Text>
+            </div>
+          </Col>
+          <Col>
+            <Card
+              bordered={false}
+              bodyStyle={{
+                backgroundColor: "#1a1a1a",
+                color: "#fff",
+                padding: "8px 16px",
+                borderRadius: 8,
+              }}
+            >
+              <Text style={{ fontSize: 16, color: "#fff" }}>
+                🌿 Super Total: <strong>{totals.super.toFixed(2)} kg</strong>&nbsp;&nbsp;|&nbsp;&nbsp;
+                🌿 Normal Total: <strong>{totals.normal.toFixed(2)} kg</strong>
+              </Text>
+            </Card>
+          </Col>
+        </Row>
 
-          <CircularLoader />
-        )
-      }
-    </div >
+        {/* Table */}
+        <Table
+          dataSource={data}
+          columns={[
+            { title: "Leaf Date", dataIndex: "date", key: "date" },
+            {
+              title: "Leaf Type",
+              dataIndex: "leaf_type",
+              key: "leaf_type",
+              render: (val) => val === "Super" ? "Super" : "Normal"
+            },
+            { title: "Net KG", dataIndex: "net_kg", key: "net_kg" },
+            { title: "Gross Weight", dataIndex: "gross_weight", key: "gross_weight" },
+            { title: "Full Weight", dataIndex: "full_weight", key: "full_weight" },
+            { title: "Bag Count", dataIndex: "bag_count", key: "bag_count" },
+            { title: "Bag Weight", dataIndex: "bag_weight", key: "bag_weight" },
+            { title: "Trp Add", dataIndex: "trp_add", key: "trp_add" },
+            { title: "Trp Ded", dataIndex: "trp_ded", key: "trp_ded" },
+            { title: "Total Ded", dataIndex: "total_ded", key: "total_ded" },
+          ]}
+          rowKey={(record, index) => index}
+          pagination={{ pageSize: 10 }}
+          scroll={{ x: true }}
+        />
+      </Card>
+    </Col>
+  </Row>
+)}
+
+      {loading && <CircularLoader />}
+    </div>
   );
-
 };
 
 export default SupplierInfo;
-//05168

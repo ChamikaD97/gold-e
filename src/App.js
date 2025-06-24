@@ -13,6 +13,7 @@ import Suppliers from "./pages/Suppliers"; // Assuming this is the correct impor
 import Vehicles from "./pages/Vehicles";
 import SupplierInfo from "./pages/SupplierInfo";
 import LeafSupply from "./pages/LeafCountChart";
+import { App as AntdApp } from 'antd';
 
 const LayoutWithHeader = () => (
   <>
@@ -23,6 +24,9 @@ const LayoutWithHeader = () => (
 
 const App = () => {
   return (
+        <AntdApp> {/* ✅ Wrap with Ant Design context provider */}
+
+
     <Router>
       <Routes>
 
@@ -54,6 +58,8 @@ const App = () => {
 
       </Routes>
     </Router>
+        </AntdApp>
+
   );
 };
 

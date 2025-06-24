@@ -188,20 +188,20 @@ const Suppliers = () => {
         { text: "Type 2", value: 2 },
         { text: "Type 3", value: 3 }
       ],
-      onFilter: (value, record) => record.Pay === value
+      onFilter: (value, record) => record.Pay === value,
+       render: (text) => (
+        <Tag
+          style={{
+            color: "#000",
+            border: "none",
+            fontWeight: "normal"
+          }}
+        >
+          {parseInt(text)  == 1   ? 'Cash' : 'Bank'} 
+        </Tag>
+      )
     },
-    {
-      title: "Bank",
-      dataIndex: "Bank",
-      key: "bank",
-      sorter: (a, b) => a.Bank?.localeCompare(b.Bank)
-    },
-    {
-      title: "Bank A/C",
-      dataIndex: "Bank AC",
-      key: "bankAc",
-      sorter: (a, b) => a["Bank AC"]?.localeCompare(b["Bank AC"])
-    },
+  
     {
       title: "NIC",
       dataIndex: "NIC",
@@ -351,7 +351,8 @@ const Suppliers = () => {
                 }>
                   Type {singleSupplier["Pay"]}
                 </Tag>
-              </Descriptions.Item>
+              
+              <Descriptions.Item label="Bank">{singleSupplier["Pay"]}</Descriptions.Item></Descriptions.Item>
               <Descriptions.Item label="Bank">{singleSupplier["Bank"]}</Descriptions.Item>
               <Descriptions.Item label="Bank A/C">{singleSupplier["Bank AC"]}</Descriptions.Item>
               <Descriptions.Item label="NIC">{singleSupplier["NIC"]}</Descriptions.Item>
