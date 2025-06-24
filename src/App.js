@@ -12,6 +12,7 @@ import MealManagement from "./pages/MealManagement";
 import Suppliers from "./pages/Suppliers"; // Assuming this is the correct import for the Suppliers page
 import Vehicles from "./pages/Vehicles";
 import SupplierInfo from "./pages/SupplierInfo";
+import LeafSupply from "./pages/LeafCountChart";
 
 const LayoutWithHeader = () => (
   <>
@@ -35,17 +36,17 @@ const App = () => {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/factory-targets" element={<FactoryTargetAchievemenets />} />
           <Route path="/employees" element={<EmployeeManagementPage />} />
-          <Route path="/leaf-count" element={<LeafCountChart />} />
+          <Route path="/leaf/supply" element={<LeafSupply />} />
 
           <Route path="/meal" element={<MealManagement />} />
-          
-          <Route path="/suppliers" element={<Suppliers />} />
+
+          <Route path="/suppliers/routes" element={<Suppliers />} />
 
 
           <Route path="/vehicles" element={<Vehicles />} />
-
+          <Route path="/supplier/info" element={<SupplierInfo />} />
           {/* 404 Route */}
-          <Route path="/supplier/:supplierId" element={<SupplierInfo />} />
+
 
           <Route path="/404" element={<div>404 - Page Not Found</div>} />
           <Route path="*" element={<Navigate to="/404" replace />} />

@@ -17,7 +17,7 @@ import "jspdf-autotable";
 const { Option } = Select;
 const { Text } = Typography;
 
-const LeafCountChart = () => {
+const LeafSupply = () => {
   const [data, setData] = useState([]);
   const [filters, setFilters] = useState({ year: "Select Year", month: "Select Month", officer: "All", line: "Select Line", lineCode: '' });
   const [columns, setColumns] = useState([]);
@@ -686,4 +686,4 @@ const LeafCountChart = () => {
   );
 };
 
-export default LeafCountChart;
+export default LeafSupply;

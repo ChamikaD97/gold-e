@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   Card,
   Typography,
-  Row,
+  Row, Input,
   Col,
   DatePicker,
   Button,
@@ -12,6 +12,7 @@ import { useParams } from "react-router-dom";
 import CircularLoader from "../components/CircularLoader";
 import { useSelector } from "react-redux";
 import dayjs from "dayjs";
+import { SearchRounded } from "@mui/icons-material";
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -24,7 +25,12 @@ const SupplierInfo = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [dateRange, setDateRange] = useState([]);
-
+  const [filters, setFilters] = useState({
+    year: "2024",
+    month: "All",
+    line: "All",
+    search: "", searchById: "",
+  });
   const apiKey = "quix717244";
 
   const fetchSupplierDataFromId = async (id) => {
@@ -75,8 +81,52 @@ const SupplierInfo = () => {
 
   return (
     <div style={{ padding: 24 }}>
+
+
+       <Card bordered={false} style={cardStyle}>
+
+      <Row gutter={[8, 8]} justify="end">
+        <Col md={6}>
+          <Text style={{ color: "#fff", paddingTop: 6, display: "inline-block" }}>
+            Search Supplier
+          </Text>
+        </Col>
+
+
+        <Col md={8}>
+          <Input
+            className="custom-supplier-input"
+            value={filters.searchById}
+            onChange={(e) => setFilters(prev => ({ ...prev, searchById: e.target.value }))}
+
+            placeholder="Search by ID or Name"
+            style={{
+              width: "100%",
+              backgroundColor: "rgb(0, 0, 0)",
+              color: "#fff",
+              border: "1px solid #333",
+              borderRadius: 6
+            }}
+            allowClear
+          />
+        </Col>
+        <Col md={2}>
+          <Button
+            icon={<SearchRounded />}
+
+            type="primary"
+            block
+            onClick={() => {
+              fetchSupplierDataFromId(filters.searchById);
+            }}
+          />
+        </Col>
+      </Row>
+
+       </Card>
+
       <Row gutter={[16, 16]} justify="space-between">
-        {/* Left Card: Supplier Basic Info */}
+
         <Col span={12}>
           <Card title="🧾 Supplier Profile" bordered={false} style={cardStyle}>
             {loading && <CircularLoader />}
@@ -100,7 +150,7 @@ const SupplierInfo = () => {
                   <Col span={14}>
                     <Tag color={
                       supplier["Pay"] === 1 ? "green" :
-                      supplier["Pay"] === 2 ? "gold" : "volcano"
+                        supplier["Pay"] === 2 ? "gold" : "volcano"
                     }>
                       Type {supplier["Pay"]}
                     </Tag>
