@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   Typography,
@@ -18,13 +18,13 @@ import bankIdCodes from "../data/bankIdCodes.json";
 import { API_KEY } from "../api/api";
 import { hideLoader, showLoader } from "../redux/loaderSlice";
 import { useDispatch, useSelector } from "react-redux";
+import { setSelectedSupplier } from "../redux/commonDataSlice";
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
 
 const SupplierInfo = () => {
   const [supplier, setSupplier] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [dateRange, setDateRange] = useState([
     dayjs().startOf("month"),
     dayjs()
@@ -35,13 +35,19 @@ const SupplierInfo = () => {
   const [data, setData] = useState([]);
   const dispatch = useDispatch();
   const leafRound = useSelector((state) => state.commonData?.leafRound);
+  const supplierId = useSelector((state) => state.commonData?.selectedSupplierId);
   const apiKey = "quix717244";
+  const { isLoading } = useSelector((state) => state.loader);
 
   const [totals, setTotals] = useState({ super: 0, normal: 0 });
 
   const fetchSupplierDataFromId = async (supId) => {
-    const id = supId?.toString().padStart(5, "0").trim();
+    dispatch(showLoader());
 
+    console.log
+      ("Fetching supplier data for ID:", supId);
+    const id = supId?.toString().padStart(5, "0").trim();
+    dispatch(setSelectedSupplier(id)); // Dispatch the selected supplier ID to the Redux store
     if (!id || id.length !== 5) {
       message.warning("⚠️ Please enter a valid 5-digit Supplier ID");
       return;
@@ -50,8 +56,6 @@ const SupplierInfo = () => {
     setSupplier(null);
     setData([]);
     const url = `/quiX/ControllerV1/supdata?k=${apiKey}&s=${id}`;
-    setLoading(true);
-
     try {
       const response = await fetch(url);
 
@@ -62,24 +66,34 @@ const SupplierInfo = () => {
 
       if (supplierData) {
         setSupplier(supplierData);
+        console.log("Supplier data loaded:", supplierData);
         message.success(`✅ Supplier ID ${id} loaded successfully`);
+        dispatch(hideLoader());
       } else {
-        console.log('********************');
-
         message.warning(`⚠️ No supplier data found for ID ${id}`);
+        dispatch(hideLoader());
       }
     } catch (err) {
       console.error(err);
       message.error("❌ Failed to load supplier data");
       setSupplier(null);
     } finally {
-      setLoading(false);
+      //dispatch(hideLoader());
     }
   };
 
 
 
+  useEffect(() => {
+    if (supplierId && supplierId.length === 5) {
+      console.log('useEffect: Fetching supplier data for ID:', supplierId);
+      dispatch(showLoader());
 
+      fetchSupplierDataFromId(supplierId);  // Fetch supplier data when component mounts or supplierId changes    
+      // dispatch(hideLoader());
+
+    }
+  }, []);
 
   const lineIdToCodeMap = (id) => {
     const record = lineIdCodeMap.find(item => parseInt(item.lineId) === id);
@@ -96,8 +110,7 @@ const SupplierInfo = () => {
     const formattedDates = range.map(date => dayjs(date).format("YYYY-MM-DD"));
     const dd = `${formattedDates[0]}~${formattedDates[1]}`;
     const url = `/quiX/ControllerV1/glfdata?k=${API_KEY}&s=${id}&d=${dd}`;
-
-    dispatch(showLoader());
+    setData([]);
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch leaf records");
@@ -162,7 +175,7 @@ const SupplierInfo = () => {
   const valueStyle = { color: "#fff" };
 
   return (
-    <div style={{ padding: 24 }}>
+    <div id="root" style={{ padding: 24 }}>
       {/* Search Bar */}
       <Row gutter={[8, 8]} justify="center">
         <Col md={12}>
@@ -202,7 +215,7 @@ const SupplierInfo = () => {
       </Row>
 
       {/* Supplier Info */}
-      {supplier && (
+      {!isLoading && supplier && (
         <>
           <Row gutter={[16, 8]} justify="space-evenly">
             <Col md={3}>
@@ -284,103 +297,131 @@ const SupplierInfo = () => {
             </Row>
           )}
 
-          {/* Date Range Picker */}
-          <Row style={{ marginTop: 24 }}>
-            <Col span={24}>
-              <Card bordered={false} style={cardStyle}>
-                <Text style={{ color: "#ccc" }}>Select From - To Dates</Text>
-                <RangePicker
-                  style={{ marginTop: 8, width: "100%" }}
-                  value={dateRange}
-                  onChange={(dates) => setDateRange(dates)}
-                  allowClear
-                />
-                <Button
-                  type="primary"
-                  block
-                  style={{ marginTop: 16 }}
-                  onClick={() => {
-                    if (dateRange.length === 2) {
-                      getLeafRecordsByDates(filters.searchById, dateRange);
-                    }
-                  }}
-                  disabled={dateRange.length !== 2}
-                >
-                  Get Leaf Records
-                </Button>
-              </Card>
-            </Col>
-          </Row>
+
         </>
       )}
 
       {/* Leaf Data Table */}
-     {supplier && data.length > 0 && (
-  <Row style={{ marginTop: 24 }}>
-    <Col span={24}>
-      <Card bordered={false} style={cardStyle}>
-        {/* Summary Header */}
-        <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
-          <Col>
-            <Text style={{ color: "#ccc", fontSize: 18, fontWeight: 600 }}>
-              📄 Leaf Records Summary
-            </Text>
-            <div>
-              <Text style={{ color: "#bbb", fontSize: 15 }}>
-                📅 Date Range:&nbsp;
-                <strong>{dayjs(dateRange[0]).format("YYYY-MM-DD")}</strong> to&nbsp;
-                <strong>{dayjs(dateRange[1]).format("YYYY-MM-DD")}</strong>
-              </Text>
-            </div>
-          </Col>
-          <Col>
-            <Card
-              bordered={false}
-              bodyStyle={{
-                backgroundColor: "#1a1a1a",
-                color: "#fff",
-                padding: "8px 16px",
-                borderRadius: 8,
-              }}
-            >
-              <Text style={{ fontSize: 16, color: "#fff" }}>
-                🌿 Super Total: <strong>{totals.super.toFixed(2)} kg</strong>&nbsp;&nbsp;|&nbsp;&nbsp;
-                🌿 Normal Total: <strong>{totals.normal.toFixed(2)} kg</strong>
-              </Text>
+      {supplier && !isLoading > 0 && (
+
+
+        <Card bordered={false} style={cardStyle}>          <Row style={{ marginTop: 24 }}>
+          <Col span={24}>
+            <Card bordered={false} style={cardStyle}>
+              <Text style={{ color: "#ccc" }}>Select From - To Dates</Text>
+              <RangePicker
+                style={{ marginTop: 8, width: "100%" }}
+                value={dateRange}
+                onChange={(dates) => setDateRange(dates)}
+                allowClear
+              />
+              <Button
+                type="primary"
+                block
+                style={{ marginTop: 16 }}
+                onClick={() => {
+                  if (dateRange.length === 2) {
+                    getLeafRecordsByDates(filters.searchById, dateRange);
+                  }
+                }}
+                disabled={dateRange.length !== 2}
+              >
+                Get Leaf Records
+              </Button>
             </Card>
           </Col>
         </Row>
 
-        {/* Table */}
-        <Table
-          dataSource={data}
-          columns={[
-            { title: "Leaf Date", dataIndex: "date", key: "date" },
-            {
-              title: "Leaf Type",
-              dataIndex: "leaf_type",
-              key: "leaf_type",
-              render: (val) => val === "Super" ? "Super" : "Normal"
-            },
-            { title: "Net KG", dataIndex: "net_kg", key: "net_kg" },
-            { title: "Gross Weight", dataIndex: "gross_weight", key: "gross_weight" },
-            { title: "Full Weight", dataIndex: "full_weight", key: "full_weight" },
-            { title: "Bag Count", dataIndex: "bag_count", key: "bag_count" },
-            { title: "Bag Weight", dataIndex: "bag_weight", key: "bag_weight" },
-            { title: "Trp Add", dataIndex: "trp_add", key: "trp_add" },
-            { title: "Trp Ded", dataIndex: "trp_ded", key: "trp_ded" },
-            { title: "Total Ded", dataIndex: "total_ded", key: "total_ded" },
-          ]}
-          rowKey={(record, index) => index}
-          pagination={{ pageSize: 10 }}
-          scroll={{ x: true }}
-        />
-      </Card>
-    </Col>
-  </Row>
-)}
 
-      {loading && <CircularLoader />}
+          {!isLoading && data.length > 0
+            &&
+            (
+              <Row style={{ marginTop: 24 }}>
+                <Col span={24}>
+                  <Card bordered={false} style={cardStyle}>
+                    {/* Summary Header */}
+                    <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
+                      <Col>
+                        <Text style={{ color: "#ccc", fontSize: 18, fontWeight: 600 }}>
+                          📄 Leaf Records Summary
+                        </Text>
+                        <div>
+                          <Text style={{ color: "#bbb", fontSize: 15 }}>
+                            📅 Date Range:&nbsp;
+                            <strong>{dayjs(dateRange[0]).format("YYYY-MM-DD")}</strong> to&nbsp;
+                            <strong>{dayjs(dateRange[1]).format("YYYY-MM-DD")}</strong>
+                          </Text>
+                        </div>
+                      </Col>
+                      <Col>
+                        <Card
+                          bordered={false}
+                          bodyStyle={{
+                            backgroundColor: "#1a1a1a",
+                            color: "#fff",
+                            padding: "8px 16px",
+                            borderRadius: 8,
+                          }}
+                        >
+                          <Text style={{ fontSize: 16, color: "#fff" }}>
+                            🌿 Super Total: <strong>{totals.super.toFixed(2)} kg</strong>&nbsp;&nbsp;|&nbsp;&nbsp;
+                            🌿 Normal Total: <strong>{totals.normal.toFixed(2)} kg</strong>
+                          </Text>
+                        </Card>
+                      </Col>
+                    </Row>
+
+                    {/* Table */}
+
+                    {!isLoading && data.length > 0
+                      && <Table
+                        dataSource={data}
+                        columns={[
+                          { title: "Leaf Date", dataIndex: "date", key: "date" },
+                          {
+                            title: "Leaf Type",
+                            dataIndex: "leaf_type",
+                            key: "leaf_type",
+                            render: (val) => val === "Super" ? "Super" : "Normal"
+                          },
+                          { title: "Net KG", dataIndex: "net_kg", key: "net_kg" },
+                          { title: "Gross Weight", dataIndex: "gross_weight", key: "gross_weight" },
+                          { title: "Full Weight", dataIndex: "full_weight", key: "full_weight" },
+                          { title: "Bag Count", dataIndex: "bag_count", key: "bag_count" },
+                          { title: "Bag Weight", dataIndex: "bag_weight", key: "bag_weight" },
+                          { title: "Trp Add", dataIndex: "trp_add", key: "trp_add" },
+                          { title: "Trp Ded", dataIndex: "trp_ded", key: "trp_ded" },
+                          { title: "Total Ded", dataIndex: "total_ded", key: "total_ded" },
+                        ]}
+                        rowKey={(record, index) => index}
+                        pagination={{ pageSize: 10 }}
+                        scroll={{ x: true }}
+                      />
+
+
+                    }
+
+
+                    {isLoading
+                      && <CircularLoader />
+
+
+
+                    }
+                  </Card>
+                </Col>
+              </Row>)
+
+          }
+
+
+        </Card>
+
+
+      )}
+
+      {isLoading
+        && <CircularLoader />}
     </div>
   );
 };

@@ -51,17 +51,63 @@ const LeafSupply = () => {
       if (!response.ok) throw new Error("Failed to fetch supplier data");
       const result = await response.json();
 
-      const transformed = result.map(item => ({
-        leaf_type: item["Leaf Type"] === 2 ? "Super" : "Normal",
-        supplier_id: item["Supplier Id"],
-        date: item["Leaf Date"],
-        net_kg: parseInt(item["Net"]),
-        lineCode: parseInt(item["Route"]),
-        line: filters.lineCode
-      }));
+      const groupedMap = {};
+
+      result.forEach(item => {
+        const key = `${item["Supplier Id"]}_${item["Leaf Date"]}`;
+        if (!groupedMap[key]) {
+          groupedMap[key] = {
+            supplier_id: item["Supplier Id"],
+            date: item["Leaf Date"],
+            lineCode: parseInt(item["Route"]),
+            line: filters.lineCode,
+            super_kg: 0,
+            normal_kg: 0,
+          };
+        }
+
+        const isSuper = item["Leaf Type"] === 2;
+        const net = parseFloat(item["Net"]);
+        if (isSuper) {
+          groupedMap[key].super_kg += net;
+        } else {
+          groupedMap[key].normal_kg += net;
+        }
+      });
+
+      const transformed = Object.values(groupedMap).map(item => {
+        const total_kg = (item.super_kg || 0) + (item.normal_kg || 0);
+        return {
+          ...item,
+          leaf_type: item.super_kg > 0 && item.normal_kg > 0 ? "Both" :
+            item.super_kg > 0 ? "Super" : "Normal",
+          net_kg: {
+            Super: item.super_kg || null,
+            Normal: item.normal_kg || null
+          },
+          super_kg: item.super_kg,
+          normal_kg: item.normal_kg,
+          total_kg: total_kg.toFixed(2)
+        };
+      });
+
+      // ✅ Monthly totals per supplier — separated
+      const supplierMonthlyTotalMap = {};
+      transformed.forEach(item => {
+        const sid = item.supplier_id;
+        if (!supplierMonthlyTotalMap[sid]) {
+          supplierMonthlyTotalMap[sid] = { total: 0, super: 0, normal: 0 };
+        }
+        supplierMonthlyTotalMap[sid].total += parseFloat(item.total_kg);
+        supplierMonthlyTotalMap[sid].super += item.super_kg;
+        supplierMonthlyTotalMap[sid].normal += item.normal_kg;
+      });
+
+      console.log("✅ Monthly totals per supplier:");
+      console.table(supplierMonthlyTotalMap);
 
       setData(transformed);
-      setColData(transformed);
+      setColData(transformed); // continue to render table as before
     } catch (err) {
       setError("Failed to load supplier data");
       setData([]);
@@ -69,17 +115,280 @@ const LeafSupply = () => {
       dispatch(hideLoader());
     }
   };
+  const setColData = (transformedData) => {
+    if (filters.month === "Select Month") {
+      setColumns([]);
+      setTableData([]);
+      return;
+    }
+
+    const daysInMonth = new Date(parseInt(filters.year), parseInt(filters.month), 0).getDate();
+    const suppliers = [...new Set(
+      transformedData.filter(item => item.lineCode === parseInt(filters.line)).map(item => item.supplier_id)
+    )].sort();
+
+    const highlightDateMap = {};
+    const highlightValueMap = {};
+
+    suppliers.forEach(supplierId => {
+      const supplierRecords = transformedData
+        .filter(item => item.supplier_id === supplierId)
+        .map(item => ({ date: new Date(item.date), kg: item.net_kg }));
+
+      const lastRecord = supplierRecords.reduce((latest, current) =>
+        current.date > latest.date ? current : latest, supplierRecords[0]);
+
+      const nextDate = new Date(lastRecord.date);
+      nextDate.setDate(nextDate.getDate() + leafRound);
+
+      highlightDateMap[supplierId] = nextDate.toDateString();
+      highlightValueMap[supplierId] = lastRecord.kg;
+    });
+
+    const today = new Date();
+    const todayYear = today.getFullYear();
+    const todayMonth = String(today.getMonth() + 1).padStart(2, "0");
+    const todayDate = today.getDate();
+
+    const dayCols = Array.from({ length: daysInMonth }, (_, i) => {
+      const day = i + 1;
+      const dateStr = new Date(`${filters.year}-${filters.month}-${String(day).padStart(2, "0")}`).toDateString();
+
+      const isTodayCol = todayYear === parseInt(filters.year) &&
+        todayMonth === filters.month &&
+        todayDate === day;
+
+      return {
+        title: `${day}`,
+        dataIndex: `day_${day}`,
+        key: `day_${day}`,
+        align: "center",
+        width: 80,
+        className: isTodayCol ? "highlight-column" : "",
+        render: (value, row) => {
+          const isHighlight = highlightDateMap[row.supplier_id] === dateStr;
+
+          const spanStyle = (bg, color) => ({
+            background: bg,
+            color: color,
+            padding: "6px 12px",
+            borderRadius: "24px",
+            fontWeight: 600,
+            fontSize: 13,
+            display: "inline-block",
+            minWidth: "50px",
+            textAlign: "center",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+            transition: "transform 0.5s",
+          });
+
+          if (isHighlight) {
+            return (
+              <div className="pulse-red animated-cell" style={{
+                backgroundColor: '#AA0114',
+                color: '#fff',
+                borderRadius: '20px',
+                padding: '6px',
+                fontWeight: 'bold'
+                , display: "inline-block",
+                minWidth: "50px",
+                textAlign: "center",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                transition: "transform 0.5s",
+              }}>
+                X
+              </div>
+            );
+          }
+
+          if (!value) return "";
+
+          if (value.kg.Super && value.kg.Normal) {
+            return (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: '4px'
+              }}>
+                <span style={spanStyle("#ffa347", "#000")}>{value.kg.Super}</span>
+                <span style={spanStyle("hsl(210, 100.00%, 63.90%)	", "#000")}>{value.kg.Normal}</span>
+              </div>
+            );
+          }
+
+          if (value.kg.Super) {
+            return <span style={spanStyle("rgb(255, 163, 71)", "#000")}>{value.kg.Super} kg </span>;
+          }
+
+          if (value.kg.Normal) {
+            return <span style={spanStyle("rgb(71, 163, 255)	", "#000")}>{value.kg.Normal} kg </span>;
+          }
+
+          return "";
+        }
+
+      };
+    });
+
+    // ✅ Compute totals
+    const rows = suppliers.map(supplier_id => {
+      const entries = transformedData.filter(item => item.supplier_id === supplier_id);
+
+      const total_kg = entries.reduce((sum, item) => sum + parseFloat(item.total_kg || 0), 0);
+      const super_kg = entries.reduce((sum, item) => sum + (item.super_kg || 0), 0);
+      const normal_kg = entries.reduce((sum, item) => sum + (item.normal_kg || 0), 0);
+
+      const row = {
+        supplier_id,
+        total_kg: total_kg,
+        super_kg: super_kg,
+        normal_kg: normal_kg
+      };
+
+      entries.forEach(item => {
+        const day = new Date(item.date).getDate();
+        row[`day_${day}`] = { type: item.leaf_type, kg: item.net_kg };
+      });
+
+      return row;
+    });
+
+    setColumns([
+      {
+        title: "Supplier ID",
+        dataIndex: "supplier_id",
+        key: "supplier_id",
+        fixed: "left",
+        align: "center",
+        width: 130,
+       render: text => (
+          <span
+            style={{
+              background: "#ff000e",
+               color: "#fff",
+              padding: "6px 12px",
+              borderRadius: "24px",
+              fontWeight: 600,
+              fontSize: 13,
+              display: "inline-block",
+              minWidth: "60px",
+              textAlign: "center",
+              boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
+              transition: "transform 0.2s",
+            }}
+          onClick={() => handleSupplierClick(text)}
+            onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.05)")}
+            onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
+          >
+            {text}
+          </span>
+        )
+      },
+      {
+        title: "Super (kg)",
+        dataIndex: "super_kg",
+        key: "super_kg",
+        align: "center",
+        width: 110,
+        render: text => (
+          <span
+            style={{
+              background: "#ffa347",
+              color: "#5C2C06",
+              padding: "6px 12px",
+              borderRadius: "24px",
+              fontWeight: 600,
+              fontSize: 13,
+              display: "inline-block",
+              minWidth: "60px",
+              textAlign: "center",
+              boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
+              transition: "transform 0.2s",
+            }}
+            onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.05)")}
+            onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
+          >
+            {text} kg
+          </span>
+        )
+      },
+      {
+        title: "Normal (kg)",
+        dataIndex: "normal_kg",
+        key: "normal_kg",
+        align: "center",
+        width: 110,
+        render: text => (
+          <span
+            style={{
+              background: "linear-gradient(135deg, #B3D9FF, #99CCFF)",
+              color: "#002B5B",
+              padding: "6px 12px",
+              borderRadius: "24px",
+              fontWeight: 600,
+              fontSize: 13,
+              display: "inline-block",
+              minWidth: "60px",
+              textAlign: "center",
+              boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
+              transition: "transform 0.2s",
+            }}
+            onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.05)")}
+            onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
+          >
+            {text} kg
+          </span>
+        )
+      },
+      {
+        title: "Total (kg)",
+        dataIndex: "total_kg",
+        key: "total_kg",
+        align: "center",
+        width: 110,
+        render: text => (
+          <span
+            style={{
+              background: "linear-gradient(135deg, #C6F6D5,rgb(0, 255, 55))",
+              color: "#064E3B",
+              padding: "6px 12px",
+              borderRadius: "24px",
+              fontWeight: 700,
+              fontSize: 13,
+              display: "inline-block",
+              minWidth: "60px",
+              textAlign: "center",
+              boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
+              transition: "transform 0.2s",
+            }}
+            onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.05)")}
+            onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
+          >
+            {text} kg
+          </span>
+        )
+      }
+
+      ,
+      ...dayCols
+    ]);
+
+    setTableData(rows);
+  };
+
+
+
 
   useEffect(() => {
     if (filters.month !== "Select Month") getLeafRecordsByRoutes();
   }, [filters.year, filters.month, filters.line, filters.lineCode]);
 
-  const handleSupplierClick = (record) => {
+  const handleSupplierClick = (supplier_id) => {
     const yearNum = Number(filters.year);
     const monthNum = Number(filters.month);
 
     const firstDate = new Date(yearNum, monthNum - 1, 1);
-    setSelectedSupplierId(record.supplier_id);
+    setSelectedSupplierId(supplier_id);
     setSelectedDate(firstDate);
     setModalOpen(true);
   };
@@ -130,114 +439,6 @@ const LeafSupply = () => {
     }
   };
 
-  const setColData = (transformedData) => {
-    if (filters.month === "Select Month") {
-      setColumns([]);
-      setTableData([]);
-      return;
-    }
-
-    const daysInMonth = new Date(parseInt(filters.year), parseInt(filters.month), 0).getDate();
-    const suppliers = [...new Set(
-      transformedData.filter(item => item.lineCode === parseInt(filters.line)).map(item => item.supplier_id)
-    )].sort();
-
-    const highlightDateMap = {};
-    const highlightValueMap = {};
-
-    suppliers.forEach(supplierId => {
-      const supplierRecords = transformedData
-        .filter(item => item.supplier_id === supplierId)
-        .map(item => ({ date: new Date(item.date), kg: item.net_kg }));
-
-      const lastRecord = supplierRecords.reduce((latest, current) =>
-        current.date > latest.date ? current : latest, supplierRecords[0]);
-
-      const nextDate = new Date(lastRecord.date);
-      nextDate.setDate(nextDate.getDate() + leafRound);
-
-      highlightDateMap[supplierId] = nextDate.toDateString();
-      highlightValueMap[supplierId] = lastRecord.kg;
-    });
-
-    const today = new Date();
-    const todayYear = today.getFullYear();
-    const todayMonth = String(today.getMonth() + 1).padStart(2, "0");
-    const todayDate = today.getDate();
-    const dayCols = Array.from({ length: daysInMonth }, (_, i) => {
-      const day = i + 1;
-      const dateStr = new Date(`${filters.year}-${filters.month}-${String(day).padStart(2, "0")}`).toDateString();
-
-      const isTodayCol =
-        todayYear === parseInt(filters.year) &&
-        todayMonth === filters.month &&
-        todayDate === day;
-
-      return {
-        title: `${day}`,
-        dataIndex: `day_${day}`,
-        key: `day_${day}`,
-        align: "center",
-        width: 80,
-        className: isTodayCol ? "highlight-column" : "", // ✅ assign custom class
-
-        render: (value, row) => {
-          const isHighlight = highlightDateMap[row.supplier_id] === dateStr;
-          let bgColor = "", fontColor = "";
-
-          if (isHighlight) {
-            bgColor = "#AA0114"; fontColor = "#fff";
-          } else if (value?.type === "Super") {
-            bgColor = "#FF9900"; fontColor = "#000";
-          } else if (value?.type === "Normal") {
-            bgColor = "#003366"; fontColor = "#fff";
-          }
-
-          return (
-            <div
-              className={isHighlight ? "pulse-red animated-cell" : "animated-cell"}
-              style={{ backgroundColor: bgColor, color: fontColor, fontWeight: "bold", padding: "4px", borderRadius: "4px" }}
-            >
-              {isHighlight ? "X" : value?.kg || ""}
-
-            </div>
-          );
-        }
-      };
-    });
-
-    const rows = suppliers.map(supplier_id => {
-      const row = { supplier_id };
-      const entries = transformedData.filter(item => item.supplier_id === supplier_id);
-      entries.forEach(item => {
-        const day = new Date(item.date).getDate();
-        row[`day_${day}`] = { type: item.leaf_type, kg: item.net_kg };
-      });
-      return row;
-    });
-
-    setColumns([
-      {
-        title: "Supplier ID",
-        dataIndex: "supplier_id",
-        key: "supplier_id",
-        fixed: "left",
-        align: "center",
-        width: 120,
-        render: (text, record) => (
-          <Button
-            style={{ backgroundColor: "#006623", color: "#fff", border: "none", fontSize: 15, fontWeight: "500" }}
-            onClick={() => handleSupplierClick(record)}
-          >
-            {text}
-          </Button>
-        )
-      },
-      ...dayCols
-    ]);
-
-    setTableData(rows);
-  };
 
   const getTotalKG = () => {
     return xSupplierDetails.reduce((sum, item) => sum + (parseFloat(item["X KG"]) || 0), 0);
@@ -630,6 +831,7 @@ const LeafSupply = () => {
               )}
             </Col>
           </Row>
+
         </Card>
 
       </div>

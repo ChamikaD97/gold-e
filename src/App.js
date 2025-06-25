@@ -14,6 +14,7 @@ import Vehicles from "./pages/Vehicles";
 import SupplierInfo from "./pages/SupplierInfo";
 import LeafSupply from "./pages/LeafCountChart";
 import { App as AntdApp } from 'antd';
+import MissingCards from "./pages/Missing Cards";
 
 const LayoutWithHeader = () => (
   <>
@@ -24,41 +25,42 @@ const LayoutWithHeader = () => (
 
 const App = () => {
   return (
-        <AntdApp> {/* ✅ Wrap with Ant Design context provider */}
+    <AntdApp> {/* ✅ Wrap with Ant Design context provider */}
 
 
-    <Router>
-      <Routes>
+      <Router>
+        <Routes>
 
-        {/* ✅ Public Routes without header */}
-        <Route path="/login" element={<LoginForm />} />
-        <Route path="/register" element={<RegisterPage />} />
+          {/* ✅ Public Routes without header */}
+          <Route path="/login" element={<LoginForm />} />
+          <Route path="/register" element={<RegisterPage />} />
 
-        {/* ✅ Protected Routes with header */}
-        <Route element={<LayoutWithHeader />}>
-          <Route index element={<Dashboard />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/factory-targets" element={<FactoryTargetAchievemenets />} />
-          <Route path="/employees" element={<EmployeeManagementPage />} />
-          <Route path="/leaf/supply" element={<LeafSupply />} />
+          {/* ✅ Protected Routes with header */}
+          <Route element={<LayoutWithHeader />}>
+            <Route index element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/factory-targets" element={<FactoryTargetAchievemenets />} />
+            <Route path="/employees" element={<EmployeeManagementPage />} />
+            <Route path="/leaf/supply" element={<LeafSupply />} />
+            <Route path="/leaf/missingCards" element={<MissingCards />} />
 
-          <Route path="/meal" element={<MealManagement />} />
+            <Route path="/meal" element={<MealManagement />} />
 
-          <Route path="/suppliers/routes" element={<Suppliers />} />
-
-
-          <Route path="/vehicles" element={<Vehicles />} />
-          <Route path="/supplier/info" element={<SupplierInfo />} />
-          {/* 404 Route */}
+            <Route path="/suppliers/routes" element={<Suppliers />} />
 
 
-          <Route path="/404" element={<div>404 - Page Not Found</div>} />
-          <Route path="*" element={<Navigate to="/404" replace />} />
-        </Route>
+            <Route path="/vehicles" element={<Vehicles />} />
+            <Route path="/supplier/info" element={<SupplierInfo />} />
+            {/* 404 Route */}
 
-      </Routes>
-    </Router>
-        </AntdApp>
+
+            <Route path="/404" element={<div>404 - Page Not Found</div>} />
+            <Route path="*" element={<Navigate to="/404" replace />} />
+          </Route>
+
+        </Routes>
+      </Router>
+    </AntdApp>
 
   );
 };

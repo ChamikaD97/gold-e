@@ -13,6 +13,7 @@ import { SearchRounded } from "@mui/icons-material";
 import { useDispatch } from "react-redux";
 import { setSelectedSupplier } from "../redux/commonDataSlice";
 import { useNavigate } from "react-router-dom";
+import { showLoader } from "../redux/loaderSlice";
 
 const Suppliers = () => {
   const { Option } = Select;
@@ -129,7 +130,15 @@ const Suppliers = () => {
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
+  const handleSearchSupplier = (supplierId) => {
+    console.log("Searching for supplier:", supplierId);
 
+    dispatch(showLoader());
+
+    const id = supplierId?.toString().padStart(5, "0").trim();
+    dispatch(setSelectedSupplier(id));
+    if (id) navigate(`/supplier/info`);
+  };
   const columns = [
     {
       title: "Supplier ID",
@@ -140,11 +149,14 @@ const Suppliers = () => {
       sorter: (a, b) => a["Supplier Id"].localeCompare(b["Supplier Id"]),
       render: (text) => (
         <Button
+
+          onClick={()=>handleSearchSupplier(text)}
           style={{
             backgroundColor: "#006623",
             color: "#fff",
             border: "none",
             fontSize: 15,
+
             fontWeight: "normal"
           }}
         >
@@ -153,7 +165,7 @@ const Suppliers = () => {
       )
     },
 
-  {
+    {
       title: "Name",
       dataIndex: "Supplier Name",
       key: "supplierName",
@@ -189,7 +201,7 @@ const Suppliers = () => {
         { text: "Type 3", value: 3 }
       ],
       onFilter: (value, record) => record.Pay === value,
-       render: (text) => (
+      render: (text) => (
         <Tag
           style={{
             color: "#000",
@@ -197,11 +209,11 @@ const Suppliers = () => {
             fontWeight: "normal"
           }}
         >
-          {parseInt(text)  == 1   ? 'Cash' : 'Bank'} 
+          {parseInt(text) == 1 ? 'Cash' : 'Bank'}
         </Tag>
       )
     },
-  
+
     {
       title: "NIC",
       dataIndex: "NIC",
@@ -351,8 +363,8 @@ const Suppliers = () => {
                 }>
                   Type {singleSupplier["Pay"]}
                 </Tag>
-              
-              <Descriptions.Item label="Bank">{singleSupplier["Pay"]}</Descriptions.Item></Descriptions.Item>
+
+                <Descriptions.Item label="Bank">{singleSupplier["Pay"]}</Descriptions.Item></Descriptions.Item>
               <Descriptions.Item label="Bank">{singleSupplier["Bank"]}</Descriptions.Item>
               <Descriptions.Item label="Bank A/C">{singleSupplier["Bank AC"]}</Descriptions.Item>
               <Descriptions.Item label="NIC">{singleSupplier["NIC"]}</Descriptions.Item>

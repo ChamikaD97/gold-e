@@ -9,7 +9,9 @@ const initialState = {
     "05": "May", "06": "June", "07": "July", "08": "August",
     "09": "September", "10": "October", "11": "November", "12": "December"
   },
-  selectedSupplier: [],
+  selectedSupplierId: '',
+  selectedRoute:'',
+  
 };
 
 const commonDataSlice = createSlice({
@@ -32,10 +34,13 @@ const commonDataSlice = createSlice({
       };
     },
     setSelectedSupplier: (state, action) => {
-      state.selectedSupplier = action.payload; // Set selected supplier
+      state.selectedSupplierId = action.payload; // Set selected supplier
+    },
+    setSelectedRoute: (state, action) => {
+      state.selectedRoute = action.payload; // Set selected route
     },
   }
 });
 
-export const { setNotificationDate, setRange6DaysMarkers, setLeafRound, clearMarkers, setSelectedSupplier } = commonDataSlice.actions;
+export const { setNotificationDate, setRange6DaysMarkers, setLeafRound, clearMarkers, setSelectedSupplier ,setSelectedRoute} = commonDataSlice.actions;
 export default commonDataSlice.reducer;

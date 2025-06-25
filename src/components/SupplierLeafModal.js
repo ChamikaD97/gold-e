@@ -64,27 +64,49 @@ const SupplierLeafModal = ({ open, onClose, filters, selectedDate, supplierId })
                                 textAlign: "center",
                             }}
                         >
-                            {item["Net"]} kg
+                            {Math.round(parseFloat(item["Net"]))} kg
                         </li>
                     );
                 })}
             </ul>
         );
     };
+    const monthMap = useSelector((state) => state.commonData?.monthMap);
 
-    const totalKg = leafData.reduce((sum, item) => sum + parseFloat(item["Net"] || 0), 0).toFixed(2);
+    const superKg = leafData
+        .filter((item) => item["Leaf Type"] === 2)
+        .reduce((sum, item) => sum + parseFloat(item["Net"] || 0), 0);
+
+    const normalKg = leafData
+        .filter((item) => item["Leaf Type"] !== 2)
+        .reduce((sum, item) => sum + parseFloat(item["Net"] || 0), 0);
+
+    const totalKg = (superKg + normalKg).toFixed(2);
 
     const downloadLeafDataAsPDF = (print = false) => {
         const today = new Date().toLocaleDateString();
         const selectedLine = filters.lineCode || "All";
         const doc = new jsPDF();
-        const title = `Supplier Leaf Report - ${dayjs(selectedDate).format("MMMM YYYY")}`;
+        const monthName = monthMap?.[filters.month] || filters.month;
+
+        // Calculate totals
+        const superKg = leafData
+            .filter((item) => item["Leaf Type"] === 2)
+            .reduce((sum, item) => sum + parseFloat(item["Net"] || 0), 0);
+
+        const normalKg = leafData
+            .filter((item) => item["Leaf Type"] !== 2)
+            .reduce((sum, item) => sum + parseFloat(item["Net"] || 0), 0);
+
+        const totalKg = (superKg + normalKg).toFixed(2);
+
         const tableData = leafData.map((record) => [
             record["Leaf Date"],
             record["Leaf Type"] === 2 ? "Super" : "Normal",
-            `${record["Net"]} kg`,
+            `${Math.round(record["Net"])} kg`,
         ]);
 
+        // Header
         doc.setFontSize(14);
         doc.setTextColor(0);
         doc.line(14, 20, 196, 20);
@@ -97,72 +119,68 @@ const SupplierLeafModal = ({ open, onClose, filters, selectedDate, supplierId })
         doc.text("Factory: Panakaduwa, No: 40, Rotumba, Bandaranayakapura", 14, 40);
         doc.text("Email: gtgreenhouse9@gmail.com | Tele: +94 77 2004609", 14, 45);
 
-        doc.setFontSize(11);
-
         doc.setFontSize(10);
-
-
-
-        doc.text(`Date: ${today}    |    Line: ${selectedLine}`, 14, 63);
-
-
-
-
+        doc.text(`Created Date: ${today}    |    Line: ${selectedLine}`, 14, 62);
 
         doc.setFontSize(11);
         doc.setFont(undefined, 'bold');
-        doc.text("Monthly Leaf Supply Summary", 14, 52);
-
+        doc.text("Monthly Leaf Supply Summary", 14, 51);
         doc.setFontSize(11);
-        doc.setFont(undefined, 'bold');
-        doc.text(`Supplier: ${supplierId}`, 14, 58);
+        doc.text(`Leaf Supply of ${supplierId} in ${dayjs(selectedDate).format("MMMM YYYY")}`, 14, 56);
         doc.setFont(undefined, 'normal');
-
         doc.line(14, 66, 196, 66);
 
+        // Table
         autoTable(doc, {
             startY: 72,
             head: [["Date", "Type", "Net KG"]],
             body: tableData,
             styles: {
-                fillColor: [255, 255, 255],
-                textColor: [0, 0, 0],
                 fontSize: 9,
                 halign: 'center',
                 lineColor: [0, 0, 0],
-                lineWidth: 0.1
+                lineWidth: 0.1,
             },
             headStyles: {
                 fillColor: [255, 255, 255],
                 textColor: [0, 0, 0],
                 fontStyle: 'bold',
                 lineColor: [0, 0, 0],
-                lineWidth: 0.2
+                lineWidth: 0.2,
+            },
+            bodyStyles: {
+                fontStyle: 'bold',
+                textColor: [0, 0, 0], // ✅ ensures data rows are black
             },
             alternateRowStyles: { fillColor: [240, 240, 240] },
             tableLineColor: [0, 0, 0],
             tableLineWidth: 0.1,
-            didDrawPage: function () {
-                // Footer
+            didDrawPage: function (data) {
+                const pageNumber = doc.internal.getCurrentPageInfo().pageNumber;
+                const totalPages = doc.internal.getNumberOfPages();
                 doc.setFontSize(8);
-                doc.setTextColor(50);
-                doc.line(14, 275, 196, 275);
-                doc.setFont(undefined, 'normal');
-                doc.text("Green House Plantation SLMS | DA Engineer | ACD Jayasinghe", 14, 280);
-                doc.text("0718553224 | deshjayasingha@gmail.com", 14, 285);
-
-                // Page number
-                const page = doc.internal.getNumberOfPages();
-                doc.setFontSize(8);
-                doc.text(`Page ${page}`, 190, 290, { align: 'right' });
-            }
+                doc.text(`Page ${pageNumber} of ${totalPages}`, 190, 290, { align: 'right' });
+            },
         });
 
-        doc.text(`Total Supplied: ${totalKg} kg`, 14, doc.lastAutoTable.finalY + 10);
 
-        doc.setFontSize(9);
+        // ✅ Add footer and summary ONLY on the last page
+        const lastPage = doc.internal.getNumberOfPages();
+        doc.setPage(lastPage);
+
+        const summaryY = doc.lastAutoTable.finalY + 10;
+        doc.setFontSize(10);
+        doc.text(`Super Total: ${Math.round(superKg)} kg`, 14, summaryY);
+        doc.text(`Normal Total: ${Math.round(normalKg)} kg`, 14, summaryY + 6);
+        doc.text(`Overall Total: ${Math.round(superKg + normalKg)} kg`, 14, summaryY + 12);
+
+        // Footer only on last page
         doc.line(14, 275, 196, 275);
-
+        doc.setFontSize(8);
+        doc.setTextColor(5);
+        doc.setFont(undefined, 'normal');
+        doc.text("Green House Plantation SLMS | DA Engineer | ACD Jayasinghe", 14, 280);
+        doc.text("0718553224 | deshjayasingha@gmail.com", 14, 285);
 
         const filename = `Leaf_Supplier_${supplierId}_${filters.year}_${filters.month}.pdf`;
 
@@ -175,6 +193,7 @@ const SupplierLeafModal = ({ open, onClose, filters, selectedDate, supplierId })
             doc.save(filename);
         }
     };
+
 
     return (
         <Modal
@@ -242,8 +261,9 @@ const SupplierLeafModal = ({ open, onClose, filters, selectedDate, supplierId })
 
                         <Calendar
                             fullscreen={false}
-                            defaultValue={dayjs(selectedDate)}
                             dateCellRender={dateCellRender}
+                            value={dayjs(selectedDate)}
+
                         />
 
                         <div
@@ -257,12 +277,16 @@ const SupplierLeafModal = ({ open, onClose, filters, selectedDate, supplierId })
                                 alignItems: "center",
                                 color: "#fff",
                                 fontSize: 16,
-                                border: "1px solid #444"
+                                border: "1px solid #444",
+                                flexWrap: "wrap",
+                                gap: 16
                             }}
                         >
-                            <span>Total Supplied:</span>
-                            <span>{totalKg} kg</span>
+                            <div>🌿 Super Total: <strong>{Math.round(superKg)} kg</strong></div>
+                            <div>🌿 Normal Total: <strong>{Math.round(normalKg)} kg</strong></div>
+                            <div>🧮 Overall Total: <strong>{Math.round(superKg + normalKg)} kg</strong></div>
                         </div>
+
                     </>
                 )}
             </Card>
