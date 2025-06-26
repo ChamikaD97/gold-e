@@ -15,6 +15,7 @@ import SupplierInfo from "./pages/SupplierInfo";
 import LeafSupply from "./pages/LeafCountChart";
 import { App as AntdApp } from 'antd';
 import MissingCards from "./pages/Missing Cards";
+import LeafSupplyByDateRange from "./pages/LeafSupplyByDateRange";
 
 const LayoutWithHeader = () => (
   <>
@@ -42,6 +43,9 @@ const App = () => {
             <Route path="/factory-targets" element={<FactoryTargetAchievemenets />} />
             <Route path="/employees" element={<EmployeeManagementPage />} />
             <Route path="/leaf/supply" element={<LeafSupply />} />
+
+            <Route path="/leaf/dailyLeafSupply" element={<LeafSupplyByDateRange
+            />} />
             <Route path="/leaf/missingCards" element={<MissingCards />} />
 
             <Route path="/meal" element={<MealManagement />} />
@@ -52,7 +56,6 @@ const App = () => {
             <Route path="/vehicles" element={<Vehicles />} />
             <Route path="/supplier/info" element={<SupplierInfo />} />
             {/* 404 Route */}
-
 
             <Route path="/404" element={<div>404 - Page Not Found</div>} />
             <Route path="*" element={<Navigate to="/404" replace />} />

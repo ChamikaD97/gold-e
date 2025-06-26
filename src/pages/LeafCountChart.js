@@ -12,14 +12,14 @@ import { hideLoader, showLoader } from "../redux/loaderSlice";
 import { API_KEY, getMonthDateRangeFromParts } from "../api/api";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
-
+import CountUp from "react-countup";
 
 const { Option } = Select;
 const { Text } = Typography;
 
 const LeafSupply = () => {
   const [data, setData] = useState([]);
-  const [filters, setFilters] = useState({ year: "Select Year", month: "Select Month", officer: "All", line: "Select Line", lineCode: '' });
+  const [filters, setFilters] = useState({ year: "Select Year", month: "Select Month", officer: "All", line: "Select Line", lineCode: '', officer: '' });
   const [columns, setColumns] = useState([]);
   const [tableData, setTableData] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -27,7 +27,11 @@ const LeafSupply = () => {
   const [selectedDate, setSelectedDate] = useState("2025-06-01");
   const [suppliersMarkedTomorrow, setSuppliersMarkedTomorrow] = useState([]);
   const [error, setError] = useState(null);
-
+  const [lineTotal, setLineTotal] = useState({ super: 0, normal: 0, overall: 0 });
+  const getOfficerByLineId = (lineId) => {
+    const match = lineIdCodeMap.find((line) => line.lineId === lineId);
+    return match ? match.officer : null;
+  };
 
   const [xModalVisible, setXModalVisible] = useState(false);
   const [xSupplierList, setXSupplierList] = useState([]); // array of supplier IDs
@@ -39,6 +43,7 @@ const LeafSupply = () => {
   const notificationDate = useSelector((state) => state.commonData?.notificationDate);
   const dispatch = useDispatch();
   const { isLoading } = useSelector((state) => state.loader);
+  const [lineWiseTotals, setLineWiseTotals] = useState({});
 
   const getLeafRecordsByRoutes = async () => {
     dispatch(showLoader());
@@ -66,8 +71,8 @@ const LeafSupply = () => {
           };
         }
 
+        const net = parseFloat(item["Net"] || 0);
         const isSuper = item["Leaf Type"] === 2;
-        const net = parseFloat(item["Net"]);
         if (isSuper) {
           groupedMap[key].super_kg += net;
         } else {
@@ -76,22 +81,24 @@ const LeafSupply = () => {
       });
 
       const transformed = Object.values(groupedMap).map(item => {
-        const total_kg = (item.super_kg || 0) + (item.normal_kg || 0);
+        const total_kg = item.super_kg + item.normal_kg;
         return {
           ...item,
-          leaf_type: item.super_kg > 0 && item.normal_kg > 0 ? "Both" :
-            item.super_kg > 0 ? "Super" : "Normal",
+          leaf_type:
+            item.super_kg > 0 && item.normal_kg > 0
+              ? "Both"
+              : item.super_kg > 0
+                ? "Super"
+                : "Normal",
           net_kg: {
             Super: item.super_kg || null,
-            Normal: item.normal_kg || null
+            Normal: item.normal_kg || null,
           },
-          super_kg: item.super_kg,
-          normal_kg: item.normal_kg,
-          total_kg: total_kg.toFixed(2)
+          total_kg: total_kg.toFixed(2),
         };
       });
 
-      // ✅ Monthly totals per supplier — separated
+      // Supplier-wise monthly totals
       const supplierMonthlyTotalMap = {};
       transformed.forEach(item => {
         const sid = item.supplier_id;
@@ -103,18 +110,55 @@ const LeafSupply = () => {
         supplierMonthlyTotalMap[sid].normal += item.normal_kg;
       });
 
+
+
+      // ✅ Line-wise totals across all records
+      const lineWiseTotalMap = {};
+
+      transformed.forEach(item => {
+        const lineCode = item.lineCode;
+        if (!lineWiseTotalMap[lineCode]) {
+          lineWiseTotalMap[lineCode] = { super: 0, normal: 0, overall: 0 };
+        }
+        lineWiseTotalMap[lineCode].super += item.super_kg;
+        lineWiseTotalMap[lineCode].normal += item.normal_kg;
+        lineWiseTotalMap[lineCode].overall += item.super_kg + item.normal_kg;
+      });
+
+      console.log("📊 Line-wise totals:");
+      setLineWiseTotals(lineWiseTotalMap);
+
+
+
+
       console.log("✅ Monthly totals per supplier:");
       console.table(supplierMonthlyTotalMap);
 
+      // Line-wide totals
+      const lineSuperTotal = transformed.reduce((sum, item) => sum + item.super_kg, 0);
+      const lineNormalTotal = transformed.reduce((sum, item) => sum + item.normal_kg, 0);
+      const lineOverallTotal = lineSuperTotal + lineNormalTotal;
+
+      setLineTotal({
+        super: lineSuperTotal,
+        normal: lineNormalTotal,
+        overall: lineOverallTotal,
+      });
+
       setData(transformed);
-      setColData(transformed); // continue to render table as before
+      setColData(transformed);
     } catch (err) {
-      setError("Failed to load supplier data");
+      console.error(err);
+      setError("❌ Failed to load supplier data");
       setData([]);
+      setColData([]);
+      setLineTotal({ super: 0, normal: 0, overall: 0 });
     } finally {
       dispatch(hideLoader());
     }
   };
+
+
   const setColData = (transformedData) => {
     if (filters.month === "Select Month") {
       setColumns([]);
@@ -217,11 +261,11 @@ const LeafSupply = () => {
           }
 
           if (value.kg.Super) {
-            return <span style={spanStyle("rgb(255, 163, 71)", "#000")}>{value.kg.Super} kg </span>;
+            return <span style={spanStyle("#ffa347", "#000")}>{value.kg.Super}  </span>;
           }
 
           if (value.kg.Normal) {
-            return <span style={spanStyle("rgb(71, 163, 255)	", "#000")}>{value.kg.Normal} kg </span>;
+            return <span style={spanStyle("#47a3ff	", "#000")}>{value.kg.Normal}  </span>;
           }
 
           return "";
@@ -230,7 +274,7 @@ const LeafSupply = () => {
       };
     });
 
-    // ✅ Compute totals
+
     const rows = suppliers.map(supplier_id => {
       const entries = transformedData.filter(item => item.supplier_id === supplier_id);
 
@@ -261,11 +305,11 @@ const LeafSupply = () => {
         fixed: "left",
         align: "center",
         width: 130,
-       render: text => (
+        render: text => (
           <span
             style={{
               background: "#ff000e",
-               color: "#fff",
+              color: "#fff",
               padding: "6px 12px",
               borderRadius: "24px",
               fontWeight: 600,
@@ -276,7 +320,7 @@ const LeafSupply = () => {
               boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
               transition: "transform 0.2s",
             }}
-          onClick={() => handleSupplierClick(text)}
+            onClick={() => handleSupplierClick(text)}
             onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.05)")}
             onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
           >
@@ -294,7 +338,7 @@ const LeafSupply = () => {
           <span
             style={{
               background: "#ffa347",
-              color: "#5C2C06",
+              color: "#000",
               padding: "6px 12px",
               borderRadius: "24px",
               fontWeight: 600,
@@ -321,8 +365,8 @@ const LeafSupply = () => {
         render: text => (
           <span
             style={{
-              background: "linear-gradient(135deg, #B3D9FF, #99CCFF)",
-              color: "#002B5B",
+              background: "#47a3ff",
+              color: "#000",
               padding: "6px 12px",
               borderRadius: "24px",
               fontWeight: 600,
@@ -403,7 +447,7 @@ const LeafSupply = () => {
     });
 
     const result = [];
-    const xValueMap = {}; // NEW: store supplier_id => kg
+    const xValueMap = {}; // supplier_id => total kg string
 
     for (const [supplierId, records] of Object.entries(supplierMap)) {
       const lastRecord = records.reduce((latest, current) =>
@@ -415,7 +459,15 @@ const LeafSupply = () => {
 
       if (nextDate.toDateString() === today) {
         result.push(supplierId);
-        xValueMap[supplierId] = lastRecord.net_kg;
+
+        // Calculate total kg
+        if (typeof lastRecord.net_kg === "object") {
+          const total =
+            (lastRecord.net_kg.Super || 0) + (lastRecord.net_kg.Normal || 0);
+          xValueMap[supplierId] = `${total} kg`;
+        } else {
+          xValueMap[supplierId] = `${lastRecord.net_kg} kg`;
+        }
       }
     }
 
@@ -427,7 +479,6 @@ const LeafSupply = () => {
       const details = await Promise.all(detailPromises);
       const flattened = details.flat().filter(Boolean);
 
-      // Inject the X value (kg) into each supplier object
       const enriched = flattened.map(s => ({
         ...s,
         "X KG": xValueMap[s["Supplier Id"]] || "-"
@@ -438,7 +489,6 @@ const LeafSupply = () => {
       setXSupplierDetails([]);
     }
   };
-
 
   const getTotalKG = () => {
     return xSupplierDetails.reduce((sum, item) => sum + (parseFloat(item["X KG"]) || 0), 0);
@@ -565,6 +615,7 @@ const LeafSupply = () => {
 
 
   const fetchSupplierDataFromAPI = async (supplierId) => {
+    setLineWiseTotals([])
     const baseUrl = "/quiX/ControllerV1/supdata";
     const params = new URLSearchParams({ k: apiKey, s: supplierId });
     const url = `${baseUrl}?${params.toString()}`;
@@ -575,6 +626,7 @@ const LeafSupply = () => {
       const data = await response.json();
       return Array.isArray(data) ? data : data ? [data] : [];
     } catch (err) {
+      setLineWiseTotals([])
       console.error(err);
       return [];
     }
@@ -589,7 +641,7 @@ const LeafSupply = () => {
 
 
 
-  const uniqueLines = [{ label: "All", value: "All" }, ...lineIdCodeMap.map(l => ({ label: l.lineCode, value: l.lineId }))];
+  const uniqueLines = [{ label: "All", value: "All" }, ...lineIdCodeMap.map(l => ({ label: l.lineCode, value: l.lineId, officer: l.officer }))];
   const filteredLines = filters.officer === "All" ? [] : ["All", ...(officerLineMap[filters.officer] || [])];
 
   const currentDate = new Date();
@@ -750,13 +802,13 @@ const LeafSupply = () => {
       </Modal>
 
 
-      <div style={{ flex: "0 0 auto", marginBottom: 16 }} className="fade-in">
+      <div style={{ flex: "0 0 auto" }} className="fade-in">
         <Card bordered={false} style={cardStyle}>
           <Row gutter={[16, 16]}>
             <Col md={1}>
               <Button icon={<ReloadOutlined />} danger type="primary" block onClick={() => {
 
-
+                setLineWiseTotals({})
                 setXSupplierDetails([]);
 
                 setFilters({ year: "Select Year", month: "Select Month", officer: "All", line: "Select Line", lineCode: "" })
@@ -772,7 +824,7 @@ const LeafSupply = () => {
                   const selectedLine = uniqueLines.find(line => line.value === val);
                   const officerMatch = Object.entries(officerLineMap).find(([officer, lines]) => lines.includes(val));
                   const matchedOfficer = officerMatch ? officerMatch[0] : "All";
-                  setFilters(f => ({ ...f, line: val, lineCode: selectedLine?.label || "", officer: matchedOfficer, month: "Select Month" }));
+                  setFilters(f => ({ ...f, officer: val.officer, line: val, lineCode: selectedLine?.label || "", officer: matchedOfficer, month: "Select Month" }));
                 }}
                 style={{ width: "100%", backgroundColor: "rgba(0, 0, 0, 0.6)", color: "#000", border: "1px solid #333", borderRadius: 6 }}
                 dropdownStyle={{ backgroundColor: "rgba(0, 0, 0, 0.9)" }}
@@ -825,15 +877,13 @@ const LeafSupply = () => {
             </Col>
             <Col md={4}>
               {filters.month === currentMonth && filters.year == currentYear && (
-                <Button type="default" onClick={getSuppliersMarkedXToday}>
+                <Button type="primary" onClick={getSuppliersMarkedXToday}>
                   Today Suppliers
                 </Button>
               )}
             </Col>
           </Row>
-
         </Card>
-
       </div>
 
 
@@ -859,7 +909,103 @@ const LeafSupply = () => {
 
       {filters.month !== "Select Month" && (
         <>
-          <Card bordered={false} style={cardStyle}><Text strong>{filterText}</Text></Card>
+          {
+            lineWiseTotals && (
+              <Card bordered={false} style={{ ...cardStyle, marginTop: 0 }}>
+
+                <Row gutter={[16, 16]} justify="center" style={{ marginTop: 1 }}>
+                  {Object.entries(lineWiseTotals).map(([lineCode, totals]) => (
+                    <Col xs={24} sm={24} md={24} key={lineCode}>
+
+                      <div
+                        style={{
+                          margin: "16px 0",
+                          textAlign: "center",
+
+                          borderRadius: 10,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: 18,
+                            fontWeight: "bold",
+                            color: "#fff",
+                            textShadow: "1px 1px 2px rgba(0,0,0,0.5)",
+                          }}
+                        >
+                          Mr. {getOfficerByLineId(filters.line) || "Officer"} –  {filters.lineCode} Line - {monthMap[filters.month]} {filters.year}
+                        </span>
+                      </div>
+
+
+                      {/* 3-column row for Super, Normal, and Total */}
+                      <Row gutter={[16, 16]} justify="center">
+                        {/* Super Total */}
+                        <Col xs={24} sm={12} md={8}>
+                          <div
+                            style={{
+                              backgroundColor: "#ffa347",
+                              borderRadius: 10,
+                              padding: "14px 24px",
+                              textAlign: "center",
+                              fontWeight: 600,
+                              color: "#000",
+                              boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+                            }}
+                          >
+                            Super Total<br />
+                            <CountUp style={{ fontSize: 30 }} end={Math.round(totals.super)} duration={1.2} separator="," /> kg<br />
+
+                          </div>
+                        </Col>
+
+                        {/* Normal Total */}
+                        <Col xs={24} sm={12} md={8}>
+                          <div
+                            style={{
+                              backgroundColor: "#47a3ff",
+                              borderRadius: 15,
+                              padding: "14px 24px",
+                              textAlign: "center",
+                              fontWeight: 600,
+                              color: "#000",
+                              boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+                            }}
+                          >
+                            Normal Total<br />
+                            <CountUp style={{ fontSize: 30 }} end={Math.round(totals.normal)} duration={1.2} separator="," /> kg
+                          </div>
+                        </Col>
+
+                        {/* Overall Total */}
+                        <Col xs={24} sm={24} md={8}>
+                          <div
+                            style={{
+                              backgroundColor: "#28a745",
+                              borderRadius: 10,
+                              padding: "14px 24px",
+                              textAlign: "center",
+                              fontWeight: 600,
+                              color: "#000",
+                              textShadow: "0 1px 1px rgba(255, 255, 255, 0.3)",
+                              boxShadow: "0 2px 8px rgba(255, 255, 255, 0.3)",
+                            }}
+                          >
+                            Overall Total<br />                        <CountUp style={{ fontSize: 30 }} end={Math.round(totals.overall)} duration={1.2} separator="," /> kg<br />
+
+                          </div>
+                        </Col>
+                      </Row>
+                    </Col>
+                  ))}
+                </Row>
+              </Card>
+            )
+
+          }
+
+
+
           {suppliersMarkedTomorrow.length > 0 && (
             <Card bordered={false} style={{ ...cardStyle, marginTop: 12 }}>
               <Text strong>Suppliers that need to supply leaf after {notificationDate} days</Text>

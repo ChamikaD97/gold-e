@@ -88,11 +88,13 @@ const HeaderComponent = () => {
           <Menu.Item key="leaf-counts">
             <Link to="/leaf/count">Leaf Counts</Link>
           </Menu.Item>
-           <Menu.Item key="missing-cards">
+          <Menu.Item key="missing-cards">
             <Link to="/leaf/missingCards">Missing Cards</Link>
           </Menu.Item>
+          <Menu.Item key="missing-cards">
+            <Link to="/leaf/dailyLeafSupply">Leaf Supply</Link>
+          </Menu.Item>
         </SubMenu>
-
         <Menu.Item key="store" icon={<ShopOutlined />}>
           <Link to="/store">Store</Link>
         </Menu.Item>

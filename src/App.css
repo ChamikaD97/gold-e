@@ -168,11 +168,14 @@ body {
 
 /* Add this to your CSS file or in a <style> block if using styled-components */
 .ant-table-cell.highlight-column {
-  background-color: green !important;
-  color: #fff;
+  background: linear-gradient(to right, #0f9b0f, #00c853) !important;
+  color: #fff !important;
   font-weight: bold;
-  transition: background-color 8s ease-in-out;
+  animation: pulseHighlight 2s ease-in-out infinite alternate;
+  transition: background-color 0.6s ease;
+  border-radius: 6px;
 }
+
 
 @keyframes pulseRed {
   0% {

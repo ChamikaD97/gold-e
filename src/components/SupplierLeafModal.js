@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Calendar, Alert, Card, Button } from "antd";
+import { Modal, Calendar, Alert, Card, Button, Row, Col } from "antd";
 import dayjs from "dayjs";
 import CircularLoader from "../components/CircularLoader";
 import { API_KEY, getMonthDateRangeFromParts } from "../api/api";
@@ -49,8 +49,8 @@ const SupplierLeafModal = ({ open, onClose, filters, selectedDate, supplierId })
             <ul style={{ padding: 0, margin: 0, listStyle: "none" }}>
                 {records.map((item, idx) => {
                     const type = item["Leaf Type"] === 2 ? "Super" : "Normal";
-                    const bgColor = type === "Super" ? "#FF9900" : "#003366";
-                    const color = type === "Super" ? "#000" : "#fff";
+                    const bgColor = type === "Super" ? "#ffa347" : "#47a3ff";
+                    const color = type === "Super" ? "#000" : "#000";
                     return (
                         <li
                             key={idx}
@@ -265,27 +265,73 @@ const SupplierLeafModal = ({ open, onClose, filters, selectedDate, supplierId })
                             value={dayjs(selectedDate)}
 
                         />
+                    <div
+  style={{
+    marginTop: 20,
+    padding: 20,
+    background: "#2b2b2b",
+    borderRadius: 10,
+    border: "1px solid #444",
+  }}
+>
+  <Row gutter={[16, 16]} justify="center">
+    {/* Super Total */}
+    <Col xs={24} sm={12} md={8}>
+      <div
+        style={{
+          backgroundColor: "#ffa347",
+          padding: "14px 24px",
+          borderRadius: 10,
+          color: "#000",
+          fontWeight: 600,
+          textAlign: "center",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+        }}
+      >
+         Super Total<br />
+        <strong style={{ fontSize: 20 }}>{Math.round(superKg)} kg</strong>
+      </div>
+    </Col>
 
-                        <div
-                            style={{
-                                marginTop: 20,
-                                padding: 12,
-                                background: "#2b2b2b",
-                                borderRadius: 8,
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                color: "#fff",
-                                fontSize: 16,
-                                border: "1px solid #444",
-                                flexWrap: "wrap",
-                                gap: 16
-                            }}
-                        >
-                            <div>🌿 Super Total: <strong>{Math.round(superKg)} kg</strong></div>
-                            <div>🌿 Normal Total: <strong>{Math.round(normalKg)} kg</strong></div>
-                            <div>🧮 Overall Total: <strong>{Math.round(superKg + normalKg)} kg</strong></div>
-                        </div>
+    {/* Normal Total */}
+    <Col xs={24} sm={12} md={8}>
+      <div
+        style={{
+          backgroundColor: "#47a3ff",
+          padding: "14px 24px",
+          borderRadius: 10,
+          color: "#000",
+          fontWeight: 600,
+          textAlign: "center",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+        }}
+      >
+         Normal Total<br />
+        <strong style={{ fontSize: 20 }}>{Math.round(normalKg)} kg</strong>
+      </div>
+    </Col>
+
+    {/* Overall Total */}
+    <Col xs={24} sm={24} md={8}>
+      <div
+        style={{
+          backgroundColor: "#28a745",
+          padding: "14px 24px",
+          borderRadius: 10,
+          color: "#fff",
+          fontWeight: 600,
+          textAlign: "center",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+          textShadow: "0 1px 1px rgba(0,0,0,0.4)",
+        }}
+      >
+         Overall Total<br />
+        <strong style={{ fontSize: 20 }}>{Math.round(superKg + normalKg)} kg</strong>
+      </div>
+    </Col>
+  </Row>
+</div>
+
 
                     </>
                 )}
