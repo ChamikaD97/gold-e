@@ -77,9 +77,17 @@ const HeaderComponent = () => {
           <Link to="/employees">Employees</Link>
         </Menu.Item>
 
-        <Menu.Item key="factory-targets" icon={<Archive />}>
-          <Link to="/factory-targets">Targets & Achievements</Link>
-        </Menu.Item>
+        <SubMenu key="factory-targets" icon={<Archive />} title="Targets & Achievements">
+          <Menu.Item key="target-prediction">
+            <Link to="/factory-targets/prediction">Target Prediction</Link>
+          </Menu.Item>
+          <Menu.Item key="officer-targets">
+            <Link to="/factory-targets/officer">Officer Targets</Link>
+          </Menu.Item>
+          <Menu.Item key="line-targets">
+            <Link to="/factory-targets/line">Line Targets</Link>
+          </Menu.Item>
+        </SubMenu>
 
         <SubMenu key="leaf" icon={<FundOutlined />} title="Leaf">
           <Menu.Item key="leaf-supply">

@@ -1,18 +1,66 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Calendar, Alert, Card, Button, Row, Col } from "antd";
+import { Modal, Calendar, Alert, Card, Button, Row, Col, message } from "antd";
 import dayjs from "dayjs";
 import CircularLoader from "../components/CircularLoader";
 import { API_KEY, getMonthDateRangeFromParts } from "../api/api";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { setSelectedSupplier } from "../redux/commonDataSlice";
+import { hideLoader, showLoader } from "../redux/loaderSlice";
 
 const SupplierLeafModal = ({ open, onClose, filters, selectedDate, supplierId }) => {
     const [leafData, setLeafData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [supplier, setSupplier] = useState(null);
+
+    const [data, setData] = useState([]);
+
+    const dispatch = useDispatch();
+    const fetchSupplierDataFromId = async (supId) => {
+        dispatch(showLoader());
+        console.log
+            ("Fetching supplier data for ID:", supId);
+        const id = supId?.toString().padStart(5, "0").trim();
+        dispatch(setSelectedSupplier(id)); // Dispatch the selected supplier ID to the Redux store
+        if (!id || id.length !== 5) {
+            message.warning("⚠️ Please enter a valid 5-digit Supplier ID");
+            return;
+        }
+        setSupplier(null);
+        setData([]);
+        const url = `/quiX/ControllerV1/supdata?k=${API_KEY}&s=${id}`;
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Failed to fetch supplier data");
+            const result = await response.json();
+            const supplierData = Array.isArray(result) ? result[0] : result;
+
+            if (supplierData) {
+                setSupplier(supplierData);
+                console.log("Supplier data loaded:", supplierData);
+                message.success(`✅ Supplier ID ${id} loaded successfully`);
+                dispatch(hideLoader());
+            } else {
+                message.warning(`⚠️ No supplier data found for ID ${id}`);
+                dispatch(hideLoader());
+            }
+        } catch (err) {
+            console.error(err);
+            message.error("❌ Failed to load supplier data");
+            setSupplier(null);
+        } finally {
+            //dispatch(hideLoader());
+        }
+    };
+
+
+
+
 
     useEffect(() => {
+
         if (open && supplierId) {
             setLoading(true);
             getLeafRecordsBySupplierId({ filters, supplierId })
@@ -25,6 +73,7 @@ const SupplierLeafModal = ({ open, onClose, filters, selectedDate, supplierId })
                     setLeafData([]);
                 })
                 .finally(() => setLoading(false));
+            fetchSupplierDataFromId(supplierId);
         }
     }, [supplierId, open]);
 
@@ -71,6 +120,7 @@ const SupplierLeafModal = ({ open, onClose, filters, selectedDate, supplierId })
             </ul>
         );
     };
+
     const monthMap = useSelector((state) => state.commonData?.monthMap);
 
     const superKg = leafData
@@ -247,7 +297,8 @@ const SupplierLeafModal = ({ open, onClose, filters, selectedDate, supplierId })
                     border: "1px solid #444",
                 }}
             >
-                {`Leaf Supply of  ${supplierId}  in  ${dayjs(selectedDate).format("MMMM YYYY")}`}
+                {`Leaf Supply of ${supplier?.["Supplier Name"] || "Unknown"}  - ${supplierId}  in ${dayjs(selectedDate).format("MMMM YYYY")}`}
+
             </div>
 
             <Card bordered={false} style={{ backgroundColor: "#2a2a2a", borderRadius: 10 }}>
@@ -265,72 +316,72 @@ const SupplierLeafModal = ({ open, onClose, filters, selectedDate, supplierId })
                             value={dayjs(selectedDate)}
 
                         />
-                    <div
-  style={{
-    marginTop: 20,
-    padding: 20,
-    background: "#2b2b2b",
-    borderRadius: 10,
-    border: "1px solid #444",
-  }}
->
-  <Row gutter={[16, 16]} justify="center">
-    {/* Super Total */}
-    <Col xs={24} sm={12} md={8}>
-      <div
-        style={{
-          backgroundColor: "#ffa347",
-          padding: "14px 24px",
-          borderRadius: 10,
-          color: "#000",
-          fontWeight: 600,
-          textAlign: "center",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
-        }}
-      >
-         Super Total<br />
-        <strong style={{ fontSize: 20 }}>{Math.round(superKg)} kg</strong>
-      </div>
-    </Col>
+                        <div
+                            style={{
+                                marginTop: 20,
+                                padding: 20,
+                                background: "#2b2b2b",
+                                borderRadius: 10,
+                                border: "1px solid #444",
+                            }}
+                        >
+                            <Row gutter={[16, 16]} justify="center">
+                                {/* Super Total */}
+                                <Col xs={24} sm={12} md={8}>
+                                    <div
+                                        style={{
+                                            backgroundColor: "#ffa347",
+                                            padding: "14px 24px",
+                                            borderRadius: 10,
+                                            color: "#000",
+                                            fontWeight: 600,
+                                            textAlign: "center",
+                                            boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+                                        }}
+                                    >
+                                        Super Total<br />
+                                        <strong style={{ fontSize: 20 }}>{Math.round(superKg)} kg</strong>
+                                    </div>
+                                </Col>
 
-    {/* Normal Total */}
-    <Col xs={24} sm={12} md={8}>
-      <div
-        style={{
-          backgroundColor: "#47a3ff",
-          padding: "14px 24px",
-          borderRadius: 10,
-          color: "#000",
-          fontWeight: 600,
-          textAlign: "center",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
-        }}
-      >
-         Normal Total<br />
-        <strong style={{ fontSize: 20 }}>{Math.round(normalKg)} kg</strong>
-      </div>
-    </Col>
+                                {/* Normal Total */}
+                                <Col xs={24} sm={12} md={8}>
+                                    <div
+                                        style={{
+                                            backgroundColor: "#47a3ff",
+                                            padding: "14px 24px",
+                                            borderRadius: 10,
+                                            color: "#000",
+                                            fontWeight: 600,
+                                            textAlign: "center",
+                                            boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+                                        }}
+                                    >
+                                        Normal Total<br />
+                                        <strong style={{ fontSize: 20 }}>{Math.round(normalKg)} kg</strong>
+                                    </div>
+                                </Col>
 
-    {/* Overall Total */}
-    <Col xs={24} sm={24} md={8}>
-      <div
-        style={{
-          backgroundColor: "#28a745",
-          padding: "14px 24px",
-          borderRadius: 10,
-          color: "#fff",
-          fontWeight: 600,
-          textAlign: "center",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
-          textShadow: "0 1px 1px rgba(0,0,0,0.4)",
-        }}
-      >
-         Overall Total<br />
-        <strong style={{ fontSize: 20 }}>{Math.round(superKg + normalKg)} kg</strong>
-      </div>
-    </Col>
-  </Row>
-</div>
+                                {/* Overall Total */}
+                                <Col xs={24} sm={24} md={8}>
+                                    <div
+                                        style={{
+                                            backgroundColor: "#28a745",
+                                            padding: "14px 24px",
+                                            borderRadius: 10,
+                                            color: "#fff",
+                                            fontWeight: 600,
+                                            textAlign: "center",
+                                            boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+                                            textShadow: "0 1px 1px rgba(0,0,0,0.4)",
+                                        }}
+                                    >
+                                        Overall Total<br />
+                                        <strong style={{ fontSize: 20 }}>{Math.round(superKg + normalKg)} kg</strong>
+                                    </div>
+                                </Col>
+                            </Row>
+                        </div>
 
 
                     </>

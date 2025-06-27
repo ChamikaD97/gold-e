@@ -296,7 +296,7 @@ const Suppliers = () => {
               <Row gutter={[8, 8]} justify="end">
                 <Col md={6}>
                   <Text style={{ color: "#fff", paddingTop: 6, display: "inline-block" }}>
-                    Search Supplier
+                    {filteredData.length} - Search Supplier
                   </Text>
                 </Col>
 

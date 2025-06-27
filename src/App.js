@@ -16,6 +16,7 @@ import LeafSupply from "./pages/LeafCountChart";
 import { App as AntdApp } from 'antd';
 import MissingCards from "./pages/Missing Cards";
 import LeafSupplyByDateRange from "./pages/LeafSupplyByDateRange";
+import Prediction from "./pages/Prediction";
 
 const LayoutWithHeader = () => (
   <>
@@ -51,6 +52,7 @@ const App = () => {
             <Route path="/meal" element={<MealManagement />} />
 
             <Route path="/suppliers/routes" element={<Suppliers />} />
+   <Route path="/factory-targets/prediction" element={<Prediction />} />
 
 
             <Route path="/vehicles" element={<Vehicles />} />
