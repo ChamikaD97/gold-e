@@ -3,7 +3,7 @@ import { notification } from "antd";
 
 const initialState = {
   notificationDate: 1,
-  leafRound: 6,
+  leafRound: 7,
   monthMap: {
     "01": "January", "02": "February", "03": "March", "04": "April",
     "05": "May", "06": "June", "07": "July", "08": "August",

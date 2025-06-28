@@ -224,12 +224,12 @@ const initialState = {
     },
     {
       "line": 138,
-      "code": "DR",
+      "code": "DR2",
       "officer": "Chamod"
     },
     {
       "line": 139,
-      "code": "DR",
+      "code": "DR3",
       "officer": "Chamod"
     }
   ]
