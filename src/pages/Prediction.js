@@ -142,28 +142,19 @@ const Prediction = () => {
       });
 
 
-
-      // ✅ Line-wise totals across all records
-      const lineWiseTotalMap = {};
+      // ✅ Merge all line-wise totals into first lineCode
+      const firstLineCode = transformed[0]?.lineCode;
+      const lineWiseTotalMap = {
+        [firstLineCode]: { super: 0, normal: 0, overall: 0 }
+      };
 
       transformed.forEach(item => {
-        const lineCode = item.lineCode;
-        if (!lineWiseTotalMap[lineCode]) {
-          lineWiseTotalMap[lineCode] = { super: 0, normal: 0, overall: 0 };
-        }
-        lineWiseTotalMap[lineCode].super += item.super_kg;
-        lineWiseTotalMap[lineCode].normal += item.normal_kg;
-        lineWiseTotalMap[lineCode].overall += item.super_kg + item.normal_kg;
+        lineWiseTotalMap[firstLineCode].super += item.super_kg;
+        lineWiseTotalMap[firstLineCode].normal += item.normal_kg;
+        lineWiseTotalMap[firstLineCode].overall += item.super_kg + item.normal_kg;
       });
 
-      console.log("📊 Line-wise totals:");
       setLineWiseTotals(lineWiseTotalMap);
-
-
-
-
-      console.log("✅ Monthly totals per supplier:");
-      console.table(supplierMonthlyTotalMap);
 
       // Line-wide totals
       const lineSuperTotal = transformed.reduce((sum, item) => sum + item.super_kg, 0);
@@ -198,9 +189,13 @@ const Prediction = () => {
       return;
     }
 
+
+
+
     const suppliers = [...new Set(
-      transformedData.filter(item => item.lineCode === parseInt(filters.line)).map(item => item.supplier_id)
+      transformedData.map(item => item.supplier_id)
     )].sort();
+
 
     const highlightDateMap = {};
     const highlightValueMap = {};
@@ -411,139 +406,136 @@ const Prediction = () => {
   const cardStyle = {
     background: "rgba(0, 0, 0, 0.6)", color: "#fff", borderRadius: 12, marginBottom: 6
   };
-const buildSupplierInfoMap = async () => {
-  const map = {};
+  const buildSupplierInfoMap = async () => {
+    const map = {};
 
-  for (const row of tableData) {
-    const id = row.supplier_id?.toString().padStart(5, "0");
-    const url = `/quiX/ControllerV1/supdata?k=${API_KEY}&s=${id}`;
+    for (const row of tableData) {
+      const id = row.supplier_id?.toString().padStart(5, "0");
+      const url = `/quiX/ControllerV1/supdata?k=${API_KEY}&s=${id}`;
 
-    try {
-      const res = await fetch(url);
-      if (!res.ok) continue;
-      const json = await res.json();
-      const supplier = Array.isArray(json) ? json[0] : json;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) continue;
+        const json = await res.json();
+        const supplier = Array.isArray(json) ? json[0] : json;
 
-      if (supplier) {
-        map[row.supplier_id] = {
-          name: supplier["Supplier Name"] || "-",
-          contact: supplier["Contact"] || "-"
-        };
+        if (supplier) {
+          map[row.supplier_id] = {
+            name: supplier["Supplier Name"] || "-",
+            contact: supplier["Contact"] || "-"
+          };
+        }
+      } catch (err) {
+        console.error(`Error fetching supplier ${id}:`, err);
       }
-    } catch (err) {
-      console.error(`Error fetching supplier ${id}:`, err);
     }
-  }
 
-  return map;
-};
-const downloadPredictionPDF = async (print = false) => {
-  const supplierInfoMap = await buildSupplierInfoMap();
-  downloadXSupplierListAsPDF(supplierInfoMap, print);
-};
+    return map;
+  };
+  const downloadPredictionPDF = async (print = false) => {
+    const supplierInfoMap = await buildSupplierInfoMap();
+    downloadXSupplierListAsPDF(supplierInfoMap, print);
+  };
 
-const downloadXSupplierListAsPDF = (supplierInfoMap, p) => {
-  const doc = new jsPDF();
-  const today = new Date().toLocaleDateString();
-  const selectedLine = filters.lineCode || "All";
-  const target = filters.lineTarget || "N/A";
-  const lastMonthAchievement = lineWiseTotals?.[filters.line]?.overall?.toFixed(0) || "N/A";
+  const downloadXSupplierListAsPDF = (supplierInfoMap, p) => {
+    const doc = new jsPDF();
+    const today = new Date().toLocaleDateString();
+    const selectedLine = filters.lineCode || "All";
+    const target = filters.lineTarget || "N/A";
+    const firstLineKey = Object.keys(lineWiseTotals)[0];
+    const lastMonthAchievement = lineWiseTotals?.[firstLineKey]?.overall?.toFixed(0) || "N/A";
 
-  // --- Header ---
-  doc.setFontSize(14);
-  doc.setTextColor(0);
-  doc.line(14, 20, 196, 20);
-  doc.setFont(undefined, 'bold');
-  doc.text("GREEN HOUSE PLANTATION (PVT) LIMITED", 105, 28, { align: "center" });
 
-  doc.setFontSize(9);
-  doc.line(14, 32, 196, 32);
-  doc.setFont(undefined, 'normal');
-  doc.text("Factory: Panakaduwa, No: 40, Rotumba, Bandaranayakapura", 14, 40);
-  doc.text("Email: gtgreenhouse9@gmail.com | Tele: +94 77 2004609", 14, 45);
+    // --- Header ---
+    doc.setFontSize(14);
+    doc.setTextColor(0);
+    doc.line(14, 20, 196, 20);
+    doc.setFont(undefined, 'bold');
+    doc.text("GREEN HOUSE PLANTATION (PVT) LIMITED", 105, 28, { align: "center" });
 
-  doc.setFontSize(11);
-  doc.setFont(undefined, 'bold');
-  doc.text("Monthly Leaf Supply Prediction", 14, 52);
-  doc.text(`${selectedLine} Line Suppliers that need to Supply This Month`, 14, 58);
+    doc.setFontSize(9);
+    doc.line(14, 32, 196, 32);
+    doc.setFont(undefined, 'normal');
+    doc.text("Factory: Panakaduwa, No: 40, Rotumba, Bandaranayakapura", 14, 40);
+    doc.text("Email: gtgreenhouse9@gmail.com | Tele: +94 77 2004609", 14, 45);
 
-  doc.setFont(undefined, 'normal');
-  doc.line(14, 63, 196, 63);
-  doc.text(`This Month Target: ${target} kg`, 14, 69);
-  doc.text(`Last Month Achievement: ${lastMonthAchievement} kg`, 105, 69);
-  doc.line(14, 72, 196, 72);
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text("Monthly Leaf Supply Prediction", 14, 52);
+    doc.text(`${selectedLine} Line Suppliers that need to Supply In July`, 14, 58);
 
-  // --- Table Body ---
-  const predictionTableRows = tableData.map((row) => {
-    const info = supplierInfoMap[row.supplier_id] || { name: "-", contact: "-" };
-    return [
-      row.supplier_id,
-      info.name,
-      info.contact,
-      `${Number(row.total_kg).toFixed(0)} kg`,
-      `${Number(row.weekValue).toFixed(0)} kg`,
-      `${Number(row.week1).toFixed(0)} kg`,
-      `${Number(row.week2).toFixed(0)} kg`,
-      `${Number(row.week3).toFixed(0)} kg`,
-      `${Number(row.week4).toFixed(0)} kg`,
-    ];
-  });
+    doc.setFont(undefined, 'normal');
+    doc.line(14, 63, 196, 63);
+    doc.text(`July Target: ${target} kg`, 14, 69);
+    doc.text(`June Achievement: ${lastMonthAchievement} kg`, 105, 69);
+    doc.line(14, 72, 196, 72);
 
-  // --- Table ---
-  doc.autoTable({
-    startY: 78,
-    head: [["ID", "Name", "Mobile", "Total", "Predicted", "Week 1", "Week 2", "Week 3", "Week 4"]],
-    body: predictionTableRows,
-    styles: {
-      fillColor: [255, 255, 255],
-      textColor: [0, 0, 0],
-      fontSize: 9,
-      halign: 'center',
-      lineColor: [0, 0, 0],
-      lineWidth: 0.1
-    },
-    headStyles: {
-      fillColor: [255, 255, 255],
-      textColor: [0, 0, 0],
-      fontStyle: 'bold',
-      lineColor: [0, 0, 0],
-      lineWidth: 0.2
-    },
-    alternateRowStyles: { fillColor: [240, 240, 240] },
-    tableLineColor: [0, 0, 0],
-    tableLineWidth: 0.1
-  });
+    // --- Table Body ---
+    const predictionTableRows = tableData.map((row) => {
+      const info = supplierInfoMap[row.supplier_id] || { name: "-", contact: "-" };
+      return [
+        row.supplier_id,
+        info.name,
+        info.contact,
+        `${Number(row.total_kg).toFixed(0)}`,
+        `${Number(row.weekValue).toFixed(0)}`,
 
-  // --- Footer only on last page ---
-  const pageCount = doc.internal.getNumberOfPages();
-  doc.setPage(pageCount);
-  const y = doc.lastAutoTable.finalY + 10;
+      ];
+    });
 
-  doc.setFontSize(10);
-  doc.setTextColor(0);
-  doc.setFont(undefined, 'bold');
-  const week1Total = tableData.reduce((sum, row) => sum + parseFloat(row.week1 || 0), 0);
-  doc.text(`Total Predicted Week 1 Supply: ${week1Total.toFixed(0)} kg`, 14, y);
+    // --- Table ---
+    doc.autoTable({
+      startY: 78,
+      head: [["ID", "Name", "Mobile", "Total (kg)", "Predicted (kg)", "Week 1 (kg)", "Week 2 (kg)", "Week 3 (kg)", "Week 4 (kg)"]],
+      body: predictionTableRows,
+      styles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontSize: 9,
+        halign: 'center',
+        lineColor: [0, 0, 0],
+        lineWidth: 0.1
+      },
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        lineColor: [0, 0, 0],
+        lineWidth: 0.2
+      },
+      alternateRowStyles: { fillColor: [240, 240, 240] },
+      tableLineColor: [0, 0, 0],
+      tableLineWidth: 0.1
+    });
 
-  doc.setFontSize(8);
-  doc.setTextColor(50);
-  doc.line(14, 275, 196, 275);
-  doc.setFont(undefined, 'normal');
-  doc.text("Green House Plantation SLMS | DA Engineer | ACD Jayasinghe", 14, 280);
-  doc.text("0718553224 | deshjayasingha@gmail.com", 14, 285);
-  doc.text(`Page ${pageCount}`, 190, 290, { align: 'right' });
+    // --- Footer only on last page ---
+    const pageCount = doc.internal.getNumberOfPages();
+    doc.setPage(pageCount);
+    const y = doc.lastAutoTable.finalY + 10;
 
-  // --- Save or Print ---
-  const formattedDate = new Date().toISOString().split('T')[0];
- doc.save(`${selectedLine} line suppliers - ${formattedDate}.pdf`);
-};
+    doc.setFontSize(10);
+    doc.setTextColor(0);
+    doc.setFont(undefined, 'bold');
+    const week1Total = tableData.reduce((sum, row) => sum + parseFloat(row.week1 || 0), 0);
+
+    doc.setFontSize(8);
+    doc.setTextColor(50);
+    doc.line(14, 275, 196, 275);
+    doc.setFont(undefined, 'normal');
+    doc.text("Green House Plantation SLMS | DA Engineer | ACD Jayasinghe", 14, 280);
+    doc.text("0718553224 | deshjayasingha@gmail.com", 14, 285);
+    doc.text(`Page ${pageCount}`, 190, 290, { align: 'right' });
+
+    // --- Save or Print ---
+    const formattedDate = new Date().toISOString().split('T')[0];
+    doc.save(`${selectedLine} line suppliers - ${formattedDate}.pdf`);
+  };
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <SupplierLeafModal open={modalOpen} filters={filters} onClose={() => setModalOpen(false)} supplierId={selectedSupplierId} selectedDate={selectedDate} />
 
-
-
+      {filteredTableData.length}
 
       <div style={{ flex: "0 0 auto" }} className="fade-in">
         <Card bordered={false} style={cardStyle}>

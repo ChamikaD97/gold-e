@@ -11,6 +11,21 @@
   },
   {
     "officer": "Ajith",
+    "lineCode": "PH2",
+    "lineId": "154"
+  },
+
+
+  {
+    "officer": "Ajith",
+    "lineCode": "PH/PH2",
+    "lineId": "60,154"
+  },
+
+
+  
+  {
+    "officer": "Ajith",
     "lineCode": "PW",
     "lineId": "65"
   },
@@ -88,11 +103,6 @@
     "officer": "Chamod",
     "lineCode": "DR-01",
     "lineId": "124"
-  },
-  {
-    "officer": "Chamod",
-    "lineCode": "DR-02",
-    "lineId": "138"
   },
   {
     "officer": "Udara",
@@ -228,6 +238,10 @@
     "officer": "Udayanga",
     "lineCode": "O-18/PT/PT2",
     "lineId": "48,64,62"
+  },  {
+    "officer": "Udayanga",
+    "lineCode": "C 13",
+    "lineId": "129"
   },
   {
     "lineId": "12,109,127",
