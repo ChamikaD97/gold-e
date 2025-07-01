@@ -17,10 +17,15 @@ const SettingsModal = ({ open, onClose }) => {
 
   return (
     <Modal
-      title="Settings"
       open={open}
       onCancel={onClose}
       footer={null}
+      bodyStyle={{
+                backgroundColor: "#1e1e1e",
+                color: "#fff",
+                padding: 20,
+                borderRadius: 8,
+            }}
       destroyOnClose
     >
       <Form
@@ -38,7 +43,8 @@ const SettingsModal = ({ open, onClose }) => {
         </Form.Item>
 
         <Form.Item label="Email" name="email">
-          <Input type="email" placeholder="Enter your email" />
+          <Input style={{ backgroundColor: "#2b2b2b", color: "#fff" }} />
+
         </Form.Item>
 
         <Form.Item label="Enable Notifications" name="notifications" valuePropName="checked">
