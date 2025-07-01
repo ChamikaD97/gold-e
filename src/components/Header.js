@@ -1,5 +1,5 @@
 import React from "react";
-import { Layout, Menu, Button } from "antd";
+import { Layout, Menu, Button, Tooltip } from "antd";
 import { Link, useNavigate } from "react-router-dom";
 import {
   AppstoreOutlined,
@@ -7,14 +7,16 @@ import {
   TeamOutlined,
   FundOutlined,
   ShopOutlined,
-  CoffeeOutlined,  // ✅ Replacing EmojiFoodBeverageOutlined
-  CarOutlined
+  CoffeeOutlined,
+  CarOutlined,
+  SettingOutlined,
+  LogoutOutlined,
+  FileOutlined, // Replacing MUI Archive icon
+  BellOutlined
 } from "@ant-design/icons";
-
-// ✅ Replace this line: Archive icon from Ant Design, not MUI
+import SettingsModal from "../components/SettingsModal"; // adjust the path if needed
 
 import icon from "../images/logo.ico";
-import { Archive } from "@mui/icons-material";
 
 const { Header } = Layout;
 const { SubMenu } = Menu;
@@ -77,7 +79,7 @@ const HeaderComponent = () => {
           <Link to="/employees">Employees</Link>
         </Menu.Item>
 
-        <SubMenu key="factory-targets" icon={<Archive />} title="Targets & Achievements">
+        <SubMenu key="factory-targets" icon={<FileOutlined />} title="Targets & Achievements">
           <Menu.Item key="target-prediction">
             <Link to="/factory-targets/prediction">Target Prediction</Link>
           </Menu.Item>
@@ -99,10 +101,11 @@ const HeaderComponent = () => {
           <Menu.Item key="missing-cards">
             <Link to="/leaf/missingCards">Missing Cards</Link>
           </Menu.Item>
-          <Menu.Item key="missing-cards">
-            <Link to="/leaf/dailyLeafSupply">Leaf Supply</Link>
+          <Menu.Item key="daily-leaf-supply">
+            <Link to="/leaf/dailyLeafSupply">Daily Leaf Supply</Link>
           </Menu.Item>
         </SubMenu>
+
         <Menu.Item key="store" icon={<ShopOutlined />}>
           <Link to="/store">Store</Link>
         </Menu.Item>
@@ -111,17 +114,42 @@ const HeaderComponent = () => {
           <Link to="/meal">Meal Management</Link>
         </Menu.Item>
 
-        <Menu.Item key="vehicles" icon={<CarOutlined />}>
+        {/* <Menu.Item key="loan" icon={<CarOutlined />}>
           <Link to="/vehicles">Loan & Advance</Link>
-        </Menu.Item>
+        </Menu.Item> */}
       </Menu>
 
-      {/* ✅ Logout Button */}
-      <div style={{ padding: "0 16px" }}>
-        <Button type="primary" danger onClick={handleLogout}>
-          Logout
-        </Button>
+      {/* ✅ Settings + Logout Buttons */}
+      <div style={{ padding: "0 25px", display: "flex", gap: 15 }}>
+        <Tooltip title="Notifications">
+          <Button
+            type="default"
+            shape="circle"
+            icon={<BellOutlined />}
+            onClick={() => navigate("/notifications")}
+          />
+        </Tooltip>
+
+        <Tooltip title="Settings">
+          <Button
+            type="primary"
+            shape="circle"
+            icon={<SettingOutlined />}
+            onClick={() => navigate("/settings")}
+          />
+        </Tooltip>
+
+        <Tooltip title="Logout">
+          <Button
+            type="primary"
+            danger
+            shape="circle"
+            icon={<LogoutOutlined />}
+            onClick={handleLogout}
+          />
+        </Tooltip>
       </div>
+
     </Header>
   );
 };
