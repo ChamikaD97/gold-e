@@ -81,6 +81,11 @@
   },
   {
     "officer": "Chamod",
+    "lineCode": "DR-02",
+    "lineId": "138"
+  },
+  {
+    "officer": "Chamod",
     "lineCode": "DR-01",
     "lineId": "124"
   },
@@ -115,6 +120,11 @@
     "lineId": "9"
   },
   {
+    "lineId": "109",
+    "lineCode": "EL",
+    "officer": "Gamini"
+  },
+  {
     "officer": "Gamini",
     "lineCode": "SELF",
     "lineId": "70"
@@ -128,6 +138,11 @@
     "officer": "Gamini",
     "lineCode": "ML",
     "lineId": "31"
+  },
+  {
+    "officer": "Gamini",
+    "lineCode": "ML2",
+    "lineId": "157"
   },
   {
     "officer": "Gamini",
@@ -193,5 +208,45 @@
     "officer": "Udayanga",
     "lineCode": "PT2",
     "lineId": "64"
+  },
+  {
+    "officer": "Chamod",
+    "lineCode": "DR-01/DR-02",
+    "lineId": "124,138"
+  },
+  {
+    "officer": "Udayanga",
+    "lineCode": "O-18",
+    "lineId": "48"
+  },
+  {
+    "officer": "Udayanga",
+    "lineCode": "O-18/PT/PT2",
+    "lineId": "48,64,62"
+  },
+  {
+    "lineId": "12,109,127",
+    "lineCode": "DG/EL/C-13",
+    "officer": "Gamini"
+  },
+  {
+    "officer": "Chamod",
+    "lineCode": "S / S2/S2 II",
+    "lineId": "67,68,69"
+  },
+  {
+    "officer": "Gamini",
+    "lineCode": "ML / ML2",
+    "lineId": "31,157"
+  },
+  {
+    "officer": "Udayanga",
+    "lineCode": "DM/DM-2",
+    "lineId": "102,161"
+  },
+  {
+    "officer": "Ajith",
+    "lineCode": "MT / MULATIYANA",
+    "lineId": "  81,97"
   }
 ]

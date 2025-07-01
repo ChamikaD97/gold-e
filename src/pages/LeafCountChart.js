@@ -111,8 +111,6 @@ const LeafSupply = () => {
       });
 
 
-
-      // ✅ Line-wise totals across all records
       const lineWiseTotalMap = {};
 
       transformed.forEach(item => {
@@ -120,20 +118,20 @@ const LeafSupply = () => {
         if (!lineWiseTotalMap[lineCode]) {
           lineWiseTotalMap[lineCode] = { super: 0, normal: 0, overall: 0 };
         }
+        console.log('***********************************', lineCode);
+
         lineWiseTotalMap[lineCode].super += item.super_kg;
         lineWiseTotalMap[lineCode].normal += item.normal_kg;
         lineWiseTotalMap[lineCode].overall += item.super_kg + item.normal_kg;
       });
+      console.log('***********************************', lineWiseTotalMap);
+      console.log('***********************************', lineWiseTotalMap);
 
-      console.log("📊 Line-wise totals:");
+
+
       setLineWiseTotals(lineWiseTotalMap);
 
-
-
-
-      console.log("✅ Monthly totals per supplier:");
-      console.table(supplierMonthlyTotalMap);
-
+      console.LOG("Line-wise totals:", lineWiseTotalMap);
       // Line-wide totals
       const lineSuperTotal = transformed.reduce((sum, item) => sum + item.super_kg, 0);
       const lineNormalTotal = transformed.reduce((sum, item) => sum + item.normal_kg, 0);
@@ -148,7 +146,6 @@ const LeafSupply = () => {
       setData(transformed);
       setColData(transformed);
     } catch (err) {
-      console.error(err);
       setError("❌ Failed to load supplier data");
       setData([]);
       setColData([]);
@@ -906,7 +903,6 @@ const LeafSupply = () => {
           </Row>
         </Card>
       )}
-
       {filters.month !== "Select Month" && (
         <>
           {
@@ -933,7 +929,7 @@ const LeafSupply = () => {
                             textShadow: "1px 1px 2px rgba(0,0,0,0.5)",
                           }}
                         >
-                          Mr. {getOfficerByLineId(filters.line) || "Officer"} –  {filters.lineCode} Line - {monthMap[filters.month]} {filters.year}
+                          -     {lineWiseTotals.length}  - Mr. {getOfficerByLineId(filters.line) || "Officer"} –  {filters.lineCode} Line - {monthMap[filters.month]} {filters.year}
                         </span>
                       </div>
 
